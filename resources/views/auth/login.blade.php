@@ -57,6 +57,21 @@
                             @enderror
                         </div>
 
+                        <div class="mb-3">
+                            <label for="role" class="form-label">
+                                <i class="fas fa-user-tag me-2"></i> Login Sebagai
+                            </label>
+                            <select name="role" id="role" class="form-select @error('role') is-invalid @enderror" required>
+                                <option value="" disabled selected>-- Pilih Role --</option>
+                                <option value="user" {{ old('role') == 'user' ? 'selected' : '' }}>Mahasiswa</option>
+                                <option value="dosen" {{ old('role') == 'dosen' ? 'selected' : '' }}>Dosen</option>
+                                <option value="admin" {{ old('role') == 'admin' ? 'selected' : '' }}>Admin</option>
+                            </select>
+                            @error('role')
+                                <span class="invalid-feedback">{{ $message }}</span>
+                            @enderror
+                        </div>
+
                         <div class="mb-3 form-check">
                             <input type="checkbox" name="remember" id="remember" class="form-check-input" 
                                    {{ old('remember') ? 'checked' : '' }}>
