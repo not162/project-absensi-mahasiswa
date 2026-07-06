@@ -26,9 +26,21 @@
 
     <div class="card shadow-sm">
         <div class="card-body">
-            <form action="{{ route('absensi.store') }}" method="POST">
+            {{-- Toggle Method Selection --}}
+            <div class="d-flex align-items-center justify-content-between mb-4 p-3 bg-light rounded border">
+                <div>
+                    <h6 class="mb-1 fw-bold text-dark"><i class="fas fa-sliders-h me-1 text-primary"></i> Metode Validasi Kehadiran</h6>
+                    <small class="text-muted">Pilih apakah perubahan status langsung tersimpan otomatis ke database (Asynchronous) atau harus klik tombol simpan manual (Synchronous).</small>
+                </div>
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" role="switch" id="toggleSyncMode" checked style="cursor: pointer; transform: scale(1.2);">
+                    <label class="form-check-label fw-bold text-success ms-2" for="toggleSyncMode" id="toggleSyncModeLabel">Asynchronous (Auto-Save)</label>
+                </div>
+            </div>
+
+            <form action="{{ route('absensi.store') }}" method="POST" id="attendanceForm">
                 @csrf
-                <input type="hidden" name="meeting_id" value="{{ $meeting->id }}">
+                <input type="hidden" name="meeting_id" id="current_meeting_id" value="{{ $meeting->id }}">
 
                 {{-- Materi --}}
                 <div class="mb-4">
@@ -71,10 +83,11 @@
                                     <div class="d-flex gap-3">
                                         @foreach(['hadir' => 'Hadir', 'izin' => 'Izin', 'sakit' => 'Sakit', 'tidak_hadir' => 'Tidak Hadir'] as $val => $label)
                                         <div class="form-check">
-                                            <input class="form-check-input" type="radio"
+                                            <input class="form-check-input btn-radio-attendance" type="radio"
                                                    name="absen[{{ $mhs->id }}]"
                                                    id="s_{{ $mhs->id }}_{{ $val }}"
                                                    value="{{ $val }}"
+                                                   data-student-id="{{ $mhs->id }}"
                                                    {{ $currentStatus === $val ? 'checked' : '' }}>
                                             <label class="form-check-label" for="s_{{ $mhs->id }}_{{ $val }}">
                                                 {{ $label }}
@@ -219,10 +232,79 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
 function setAll(status) {
-    document.querySelectorAll(`input[type=radio][value="${status}"]`).forEach(r => r.checked = true);
+    document.querySelectorAll(`input[type=radio][value="${status}"]`).forEach(r => {
+        r.checked = true;
+        // Trigger change event to auto-save if async is active
+        r.dispatchEvent(new Event('change'));
+    });
 }
 
 document.addEventListener("DOMContentLoaded", function() {
+    const toggleSyncMode = document.getElementById('toggleSyncMode');
+    const toggleSyncModeLabel = document.getElementById('toggleSyncModeLabel');
+    const saveButtonContainer = document.getElementById('attendanceForm').querySelector('.border-top');
+
+    // Toggle visual states and save button visibility based on mode
+    function updateModeUI() {
+        if (toggleSyncMode.checked) {
+            toggleSyncModeLabel.innerText = "Asynchronous (Auto-Save)";
+            toggleSyncModeLabel.className = "form-check-label fw-bold text-success ms-2";
+            if(saveButtonContainer) saveButtonContainer.style.display = 'none';
+        } else {
+            toggleSyncModeLabel.innerText = "Synchronous (Manual Save)";
+            toggleSyncModeLabel.className = "form-check-label fw-bold text-warning ms-2";
+            if(saveButtonContainer) saveButtonContainer.style.display = 'block';
+        }
+    }
+
+    toggleSyncMode.addEventListener('change', updateModeUI);
+    updateModeUI(); // initial run
+
+    // Asynchronous Auto-save Listener
+    document.querySelectorAll('.btn-radio-attendance').forEach(input => {
+        input.addEventListener('change', function() {
+            if (toggleSyncMode.checked) {
+                const studentId = this.getAttribute('data-student-id');
+                const statusValue = this.value;
+                const meetingId = document.getElementById('current_meeting_id').value;
+                const row = this.closest('tr');
+
+                // Visual loading state
+                row.style.backgroundColor = '#f1f8e9';
+
+                fetch("{{ route('absensi.updateAsync') }}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    },
+                    body: JSON.stringify({
+                        meeting_id: meetingId,
+                        student_id: studentId,
+                        status: statusValue
+                    })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        // Success flash animation
+                        row.style.backgroundColor = '#e8f5e9';
+                        setTimeout(() => {
+                            row.style.backgroundColor = '';
+                        }, 800);
+                    } else {
+                        row.style.backgroundColor = '#ffebee';
+                        alert('Gagal memperbarui status absensi!');
+                    }
+                })
+                .catch(err => {
+                    console.error('Async save error:', err);
+                    row.style.backgroundColor = '#ffebee';
+                });
+            }
+        });
+    });
+
     function pollMeetingAttendance() {
         const meetingId = '{{ $meeting->id }}';
         fetch(`{{ route('api.attendance.latest') }}?meeting_id=${meetingId}`)
@@ -247,14 +329,15 @@ document.addEventListener("DOMContentLoaded", function() {
             .catch(err => console.error('Live attendance polling error:', err));
     }
     
-    setInterval(pollMeetingAttendance, 3000); // 3 seconds for near real-time feel
+    // Check if we should poll (only when not auto-saving on our end, or let it sync updates from students who check in themselves via QR)
+    setInterval(pollMeetingAttendance, 4000); 
 
     // Generate QR Code
     @php
         $qrUrl = route('mahasiswa.qrCheckin', ['token' => encrypt($meeting->id)]);
     @endphp
     
-    // Check if modal is shown to generate QR (avoids generating multiple times if hidden)
+    // Check if modal is shown to generate QR
     const qrModal = document.getElementById('qrModal');
     let qrCodeGenerated = false;
     qrModal.addEventListener('shown.bs.modal', function () {

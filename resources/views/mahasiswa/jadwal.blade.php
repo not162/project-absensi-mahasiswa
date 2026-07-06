@@ -46,18 +46,39 @@
             <span class="badge bg-secondary">{{ $schedule->hari }} {{ substr($schedule->jam_mulai,0,5) }}-{{ substr($schedule->jam_selesai,0,5) }}</span>
         </div>
         <div class="card-body">
-            <div class="row mb-3">
-                <div class="col-md-3"><small class="text-muted">Dosen</small><div>{{ $schedule->lecturer->name ?? '-' }}</div></div>
-                <div class="col-md-3"><small class="text-muted">Ruangan</small><div>{{ $schedule->ruangan ?? '-' }}</div></div>
-                <div class="col-md-6">
+            <div class="row mb-3 align-items-center">
+                <div class="col-md-3">
+                    <small class="text-muted">Dosen</small>
+                    <div>{{ $schedule->lecturer->name ?? '-' }}</div>
+                </div>
+                <div class="col-md-3">
+                    <small class="text-muted">Ruangan</small>
+                    <div>{{ $schedule->ruangan ?? '-' }}</div>
+                </div>
+                <div class="col-md-4">
                     <small class="text-muted">Kehadiran</small>
-                    <div class="d-flex gap-2 mt-1">
+                    <div class="d-flex gap-2 mt-1 flex-wrap">
                         <span class="badge bg-light text-dark border">Hadir: {{ $absen->hadir ?? 0 }}</span>
                         <span class="badge bg-light text-dark border">Izin: {{ $absen->izin ?? 0 }}</span>
                         <span class="badge bg-light text-dark border">Sakit: {{ $absen->sakit ?? 0 }}</span>
                         <span class="badge bg-light text-dark border">Tidak Hadir: {{ $absen->tidak_hadir ?? 0 }}</span>
                         <span class="badge bg-light text-dark border">{{ $persen }}%</span>
                     </div>
+                </div>
+                <div class="col-md-2 text-end">
+                    @if($isHariIni && $meeting)
+                        @if($myStatus)
+                            <span class="badge bg-success py-2 px-3 w-100 text-uppercase"><i class="fas fa-check-circle me-1"></i> Sudah Absen</span>
+                        @else
+                            <button type="button" onclick="openCheckinModal({{ $schedule->id }}, {{ $schedule->absen_darimana_saja ? 'true' : 'false' }})" class="btn btn-success fw-bold text-white px-3 py-2 w-100 shadow-sm">
+                                <i class="fas fa-sign-in-alt me-1"></i> Absen Masuk
+                            </button>
+                        @endif
+                    @else
+                        <button type="button" class="btn btn-warning fw-bold text-dark px-3 py-2 w-100 shadow-sm" disabled style="opacity: 0.85;">
+                            <i class="fas fa-clock me-1"></i> Belum Mulai
+                        </button>
+                    @endif
                 </div>
             </div>
 

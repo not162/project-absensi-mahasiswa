@@ -49,6 +49,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/profile/update', [ProfileController::class, 'update'])->name('profile.update');
     Route::get('/profile/password', [ProfileController::class, 'editPassword'])->name('profile.password');
     Route::post('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.updatePassword');
+    Route::get('/semantic-search', [DashboardController::class, 'semanticSearch'])->name('semantic.search');
 
     // ──────────────────────────────────────────────────────────
     // ADMIN ONLY ROUTES
@@ -133,6 +134,7 @@ Route::middleware('auth')->group(function () {
         // Absensi Mahasiswa per Pertemuan
         Route::get('/absensi/{schedule}/start', [StudentAttendanceController::class, 'startAbsensi'])->name('absensi.start');
         Route::post('/absensi/store', [StudentAttendanceController::class, 'store'])->name('absensi.store');
+        Route::post('/absensi/update-async', [StudentAttendanceController::class, 'updateAsync'])->name('absensi.updateAsync');
         Route::get('/absensi/rekap', [StudentAttendanceController::class, 'rekap'])->name('absensi.rekap');
 
         // Schedules CRUD (Admin & Dosen)

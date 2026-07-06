@@ -159,16 +159,21 @@ class DashboardController extends Controller
                 ->where('status', 'hadir')->count();
             $persenKehadiran = $totalAbsenRecord > 0 ? round(($totalHadir / $totalAbsenRecord) * 100) : 0;
 
-            // 5. Ringkasan kehadiran per kelas yang diampu
+            // 5. Ringkasan kehadiran per kelas yang diampu (Optimized to avoid N+1 queries)
             $courseSchedules = Schedule::with(['course', 'kelas'])
                 ->where('user_id', $user->id)
                 ->get();
 
+            $courseScheduleIds = $courseSchedules->pluck('id');
+            $allMeetings = ClassMeeting::whereIn('schedule_id', $courseScheduleIds)->get();
+            $allMeetingIds = $allMeetings->pluck('id');
+            $allAttendances = StudentAttendance::whereIn('meeting_id', $allMeetingIds)->get();
+
             $classAttendanceSummary = [];
             foreach ($courseSchedules as $schedule) {
-                $meetingIds = ClassMeeting::where('schedule_id', $schedule->id)->pluck('id');
-                $totalRecord = StudentAttendance::whereIn('meeting_id', $meetingIds)->count();
-                $hadirRecord = StudentAttendance::whereIn('meeting_id', $meetingIds)
+                $meetingIds = $allMeetings->where('schedule_id', $schedule->id)->pluck('id');
+                $totalRecord = $allAttendances->whereIn('meeting_id', $meetingIds)->count();
+                $hadirRecord = $allAttendances->whereIn('meeting_id', $meetingIds)
                     ->where('status', 'hadir')
                     ->count();
                 
@@ -240,14 +245,21 @@ class DashboardController extends Controller
         $totalTidakHadir = $riwayatAbsensi->where('status', 'tidak_hadir')->count();
         $persenKehadiran = $totalAbsen > 0 ? round(($totalHadir / $totalAbsen) * 100) : 0;
 
-        // Data grafik per matkul
+        // Data grafik per matkul (Optimized to avoid N+1 queries)
         $grafikLabels = [];
         $grafikData   = [];
         if ($kelas) {
+            $scheduleIds = $jadwalKuliah->pluck('id');
+            $allMeetings = ClassMeeting::whereIn('schedule_id', $scheduleIds)->get();
+            $allMeetingIds = $allMeetings->pluck('id');
+            $allAttendances = StudentAttendance::whereIn('meeting_id', $allMeetingIds)
+                ->where('student_id', $user->id)
+                ->get();
+
             foreach ($jadwalKuliah as $jadwal) {
-                $meetingIds = ClassMeeting::where('schedule_id', $jadwal->id)->pluck('id');
-                $total  = StudentAttendance::whereIn('meeting_id', $meetingIds)->where('student_id', $user->id)->count();
-                $hadir  = StudentAttendance::whereIn('meeting_id', $meetingIds)->where('student_id', $user->id)->where('status', 'hadir')->count();
+                $meetingIds = $allMeetings->where('schedule_id', $jadwal->id)->pluck('id');
+                $total  = $allAttendances->whereIn('meeting_id', $meetingIds)->count();
+                $hadir  = $allAttendances->whereIn('meeting_id', $meetingIds)->where('status', 'hadir')->count();
                 $grafikLabels[] = $jadwal->course->nama_matkul ?? '-';
                 $grafikData[]   = $total > 0 ? round(($hadir / $total) * 100) : 0;
             }
@@ -268,5 +280,27 @@ class DashboardController extends Controller
             'grafikData'      => $grafikData,
             'activeMeetings'  => $activeMeetings,
         ]);
+    }
+
+    /** Pencarian Semantik Matakuliah (Vector Database Cosine Similarity) */
+    public function semanticSearch(\Illuminate\Http\Request $request, \App\Services\VectorSearchService $vectorSearch)
+    {
+        $query = $request->get('query', '');
+        $results = [];
+
+        if ($query) {
+            $courses = Course::all()->map(function ($c) {
+                return [
+                    'id' => $c->id,
+                    'kode' => $c->kode_matkul,
+                    'nama' => $c->nama_matkul,
+                    'text' => $c->kode_matkul . ' ' . $c->nama_matkul . ' ' . ($c->deskripsi ?? '')
+                ];
+            })->toArray();
+
+            $results = $vectorSearch->search($query, $courses, 5);
+        }
+
+        return view('search.semantic', compact('query', 'results'));
     }
 }

@@ -95,6 +95,41 @@ class StudentAttendanceController extends Controller
         return redirect()->route('dosen.jadwal')->with('success', 'Absensi berhasil disimpan!');
     }
 
+    /** Update single student attendance asynchronously (AJAX) */
+    public function updateAsync(Request $request)
+    {
+        $request->validate([
+            'meeting_id' => 'required|exists:class_meetings,id',
+            'student_id' => 'required|exists:users,id',
+            'status'     => 'required|in:hadir,izin,sakit,tidak_hadir',
+        ]);
+
+        $meeting = ClassMeeting::findOrFail($request->meeting_id);
+        abort_if($meeting->lecturer_id !== Auth::id() && Auth::user()->role !== 'admin', 403);
+
+        $attendance = StudentAttendance::updateOrCreate(
+            ['meeting_id' => $meeting->id, 'student_id' => $request->student_id],
+            ['status' => $request->status]
+        );
+
+        // Broadcast event
+        try {
+            event(new \App\Events\AbsensiTercatat([
+                'schedule_id' => $meeting->schedule_id,
+                'meeting_id'  => $meeting->id,
+                'pesan'       => 'Absensi untuk jadwal ini telah diperbarui.'
+            ]));
+        } catch (\Exception $e) {
+            // Silence
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Status absensi berhasil diperbarui secara asynchronous!',
+            'data' => $attendance
+        ]);
+    }
+
     /** Dosen: rekap kehadiran mahasiswa per jadwal yang diajar */
     public function rekap(Request $request)
     {
