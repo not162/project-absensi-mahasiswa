@@ -43,6 +43,34 @@
         </div>
     </div>
 
+    <!-- Filters Card -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <div class="row g-3 align-items-center">
+                <!-- Prodi Filter Dropdown -->
+                <div class="col-md-4">
+                    <label class="form-label fw-bold text-muted" for="filter-prodi"><i class="fas fa-university me-1 text-primary"></i> Program Studi (Prodi)</label>
+                    <select id="filter-prodi" class="form-select">
+                        <option value="">-- Semua Program Studi --</option>
+                        @foreach($departments as $dept)
+                            <option value="{{ $dept->id }}">{{ $dept->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <!-- Semester Filter Buttons -->
+                <div class="col-md-8">
+                    <label class="form-label fw-bold text-muted d-block"><i class="fas fa-graduation-cap me-1 text-success"></i> Semester</label>
+                    <div class="d-flex flex-wrap gap-1" id="semester-buttons">
+                        <button type="button" class="btn btn-sm btn-outline-primary active semester-btn" data-semester="">Semua Semester</button>
+                        @for($i = 1; $i <= 8; $i++)
+                            <button type="button" class="btn btn-sm btn-outline-primary semester-btn" data-semester="{{ $i }}">Semester {{ $i }}</button>
+                        @endfor
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- DataTables Card -->
     <div class="card shadow-sm mb-4">
         <div class="card-body">
@@ -69,10 +97,16 @@
 @push('scripts')
 <script>
     $(document).ready(function() {
-        $('#users-table').DataTable({
+        let table = $('#users-table').DataTable({
             processing: true,
             serverSide: true, // SSR enabled
-            ajax: '{{ route('users.index') }}',
+            ajax: {
+                url: '{{ route('users.index') }}',
+                data: function (d) {
+                    d.department_id = $('#filter-prodi').val();
+                    d.semester = $('#semester-buttons .active').data('semester');
+                }
+            },
             columns: [
                 { data: 'nim', name: 'nim', render: function(data) {
                     return data ? '<span class="badge bg-secondary">'+data+'</span>' : '-';
@@ -89,6 +123,17 @@
             language: {
                 url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/id.json' // Bahasa Indonesia
             }
+        });
+
+        // Trigger filters redraw
+        $('#filter-prodi').on('change', function() {
+            table.draw();
+        });
+
+        $('.semester-btn').on('click', function() {
+            $('.semester-btn').removeClass('active');
+            $(this).addClass('active');
+            table.draw();
         });
     });
 </script>

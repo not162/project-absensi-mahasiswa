@@ -27,8 +27,10 @@ class UserController extends Controller
             return $this->userService->getUsersDataTable($request);
         }
 
+        $departments = \App\Models\Department::orderBy('name')->get();
+
         // Otherwise return the view
-        return view('users.index');
+        return view('users.index', compact('departments'));
     }
 
     /** Export data mahasiswa ke PDF (print-friendly, dibuka di tab baru) */

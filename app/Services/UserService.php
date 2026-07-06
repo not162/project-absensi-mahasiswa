@@ -19,6 +19,16 @@ class UserService
         // rather than N queries for N users.
         $query = User::with(['department', 'kelas.department'])->where('role', 'user');
 
+        if ($request->filled('department_id')) {
+            $query->where('department_id', $request->department_id);
+        }
+
+        if ($request->filled('semester')) {
+            $query->whereHas('kelas', function ($q) use ($request) {
+                $q->where('semester', $request->semester);
+            });
+        }
+
         // 2. Return Server-Side processing JSON to DataTables
         return DataTables::eloquent($query)
             ->addColumn('action', function ($user) {
