@@ -54,7 +54,7 @@
                                     <th>Tahun Ajaran</th>
                                     @if(auth()->user()->role === 'admin')
                                     <th>Aksi</th>
-                                    @elseif(auth()->user()->role === 'dosen' && $schedule->user_id === auth()->id())
+                                    @elseif(auth()->user()->role === 'dosen')
                                     <th>Ubah</th>
                                     @endif
                                 </tr>
