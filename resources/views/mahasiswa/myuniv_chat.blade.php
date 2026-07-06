@@ -110,10 +110,15 @@
                         </div>
                         <div>
                             <h5 class="fw-bold mb-0 text-dark">Chat dengan MyUniv</h5>
-                            <span class="text-success small d-flex align-items-center gap-1" style="font-size: 11px;">
-                                <span class="spinner-grow spinner-grow-sm text-success" role="status" style="width: 8px; height: 8px;"></span>
-                                Online &amp; Menggunakan RAG Llama-3.3
-                            </span>
+                            <div class="d-flex align-items-center gap-2 mt-1">
+                                <span class="text-success small d-flex align-items-center gap-1" style="font-size: 11px;">
+                                    <span class="spinner-grow spinner-grow-sm text-success" role="status" style="width: 8px; height: 8px;"></span>
+                                    Online &amp; RAG Llama-3.3
+                                </span>
+                                <span class="badge bg-info text-white font-monospace" id="rlhfScoreBadge" style="font-size: 10px;">
+                                    RLHF Alignment: {{ round($user->rlhf_score, 2) }}%
+                                </span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -147,6 +152,14 @@
                                     <div class="bg-white text-dark p-3 rounded-3 border shadow-sm" style="max-width: 75%;">
                                         <div class="mb-0 small markdown-content" style="white-space: pre-wrap;">{{ $msg['content'] }}</div>
                                         <span class="d-block mt-1 text-muted" style="font-size: 9px;">{{ $msg['time'] ?? now()->format('H:i') }}</span>
+                                        
+                                        {{-- Feedback buttons --}}
+                                        <div class="mt-2 pt-1 border-top d-flex gap-2 justify-content-end align-items-center feedback-bar">
+                                            <span class="text-muted" style="font-size: 9px;">Bantu latih AI:</span>
+                                            <button type="button" class="btn btn-link p-0 text-success small" onclick="submitRlhfFeedback(this, 'terimakasih')" title="Puas / Terima Kasih (+1.5%)"><i class="far fa-thumbs-up"></i></button>
+                                            <button type="button" class="btn btn-link p-0 text-warning small" onclick="submitRlhfFeedback(this, 'tidak_cukup_puas')" title="Tidak Cukup Puas (-0.18%)"><i class="far fa-meh"></i></button>
+                                            <button type="button" class="btn btn-link p-0 text-danger small" onclick="submitRlhfFeedback(this, 'kurang_puas')" title="Kurang Puas (-2.1%)"><i class="far fa-thumbs-down"></i></button>
+                                        </div>
                                     </div>
                                 </div>
                             @endif
@@ -276,7 +289,12 @@
             if(typing) typing.remove();
 
             if (data.success) {
-                // Append AI bubble
+                // Update RLHF Score badge dynamically
+                if (data.rlhf_score !== undefined) {
+                    document.getElementById('rlhfScoreBadge').innerText = `RLHF Alignment: ${data.rlhf_score}%`;
+                }
+
+                // Append AI bubble with feedback buttons
                 const aiBubble = `
                     <div class="d-flex justify-content-start mb-3 gap-2">
                         <div class="rounded-circle bg-dark text-white d-flex align-items-center justify-content-center flex-shrink-0" style="width: 32px; height: 32px;">
@@ -285,6 +303,12 @@
                         <div class="bg-white text-dark p-3 rounded-3 border shadow-sm" style="max-width: 75%;">
                             <div class="mb-0 small markdown-content" style="white-space: pre-wrap;">${data.response}</div>
                             <span class="d-block mt-1 text-muted" style="font-size: 9px;">${data.time}</span>
+                            <div class="mt-2 pt-1 border-top d-flex gap-2 justify-content-end align-items-center feedback-bar">
+                                <span class="text-muted" style="font-size: 9px;">Bantu latih AI:</span>
+                                <button type="button" class="btn btn-link p-0 text-success small" onclick="submitRlhfFeedback(this, 'terimakasih')" title="Puas / Terima Kasih (+1.5%)"><i class="far fa-thumbs-up"></i></button>
+                                <button type="button" class="btn btn-link p-0 text-warning small" onclick="submitRlhfFeedback(this, 'tidak_cukup_puas')" title="Tidak Cukup Puas (-0.18%)"><i class="far fa-meh"></i></button>
+                                <button type="button" class="btn btn-link p-0 text-danger small" onclick="submitRlhfFeedback(this, 'kurang_puas')" title="Kurang Puas (-2.1%)"><i class="far fa-thumbs-down"></i></button>
+                            </div>
                         </div>
                     </div>
                 `;
@@ -314,6 +338,38 @@
             .replace(/>/g, "&gt;")
             .replace(/"/g, "&quot;")
             .replace(/'/g, "&#039;");
+    }
+
+    // Submit explicit RLHF Feedback
+    function submitRlhfFeedback(btn, feedbackType) {
+        const bar = btn.closest('.feedback-bar');
+        const buttons = bar.querySelectorAll('button');
+        buttons.forEach(b => b.disabled = true);
+
+        fetch("{{ route('myuniv.ai.rlhf') }}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify({ type: feedbackType })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                // Update badge
+                document.getElementById('rlhfScoreBadge').innerText = `RLHF Alignment: ${data.rlhf_score}%`;
+                
+                // Show success status
+                bar.innerHTML = `<span class="text-success" style="font-size: 9px;"><i class="fas fa-check-circle me-1"></i> Penyelarasan RLHF berhasil (${data.rlhf_score}%)</span>`;
+            } else {
+                buttons.forEach(b => b.disabled = false);
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            buttons.forEach(b => b.disabled = false);
+        });
     }
 </script>
 @endpush

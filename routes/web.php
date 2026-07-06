@@ -212,6 +212,7 @@ Route::middleware('auth')->group(function () {
         // MyUniv AI Chatbot & Analytics
         Route::get('/myuniv-ai', [App\Http\Controllers\MyUnivAIController::class, 'index'])->name('myuniv.ai');
         Route::post('/myuniv-ai/chat', [App\Http\Controllers\MyUnivAIController::class, 'chat'])->name('myuniv.ai.chat');
+        Route::post('/myuniv-ai/rlhf', [App\Http\Controllers\MyUnivAIController::class, 'rlhfFeedback'])->name('myuniv.ai.rlhf');
     });
 
     // ──────────────────────────────────────────────────────────
