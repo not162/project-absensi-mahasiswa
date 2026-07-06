@@ -316,12 +316,15 @@ class DashboardController extends Controller
         $results = [];
 
         if ($query) {
-            $courses = Course::all()->map(function ($c) {
+            $courses = Course::with('department')->get()->map(function ($c) {
                 return [
                     'id' => $c->id,
                     'kode' => $c->kode_matkul,
                     'nama' => $c->nama_matkul,
-                    'text' => $c->kode_matkul . ' ' . $c->nama_matkul . ' ' . ($c->deskripsi ?? '')
+                    'sks' => $c->sks,
+                    'semester' => $c->semester,
+                    'department' => $c->department->name ?? '-',
+                    'text' => $c->kode_matkul . ' ' . $c->nama_matkul . ' ' . ($c->deskripsi ?? '') . ' ' . ($c->department->name ?? '')
                 ];
             })->toArray();
 
