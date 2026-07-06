@@ -167,6 +167,8 @@ Route::middleware('auth')->group(function () {
             'update' => 'dosen.modules.update',
             'destroy' => 'dosen.modules.destroy',
         ]);
+
+        Route::post('/dosen/class-context-note', [DashboardController::class, 'updateClassContextNote'])->name('dosen.class.context.update');
     });
 
     // ──────────────────────────────────────────────────────────

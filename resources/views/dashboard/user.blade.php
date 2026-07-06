@@ -18,6 +18,44 @@
         </div>
     </div>
 
+    {{-- STARS Rating & Decision Making --}}
+    <div class="card border-0 shadow-sm mb-4 bg-white overflow-hidden border-start border-5 border-primary">
+        <div class="card-body p-4">
+            @php
+                $stars = $analysis['stars_analysis']['stars_count'];
+                $inputs = $analysis['stars_analysis']['decision_input'];
+                $output = $analysis['stars_analysis']['decision_output'];
+            @endphp
+            <div class="row g-4 align-items-center">
+                <div class="col-md-3 text-center border-md-end">
+                    <div class="text-warning mb-2" style="font-size: 2.2rem; letter-spacing: 3px;">
+                        @for($i = 1; $i <= 5; $i++)
+                            <i class="{{ $i <= $stars ? 'fas' : 'far' }} fa-star"></i>
+                        @endfor
+                    </div>
+                    <h5 class="fw-bold text-dark mb-1">STARS Rating</h5>
+                    <span class="badge bg-primary px-3 py-1 rounded-pill">{{ $stars }} / 5 Bintang</span>
+                </div>
+                <div class="col-md-9 ps-md-4">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <span class="badge bg-primary bg-opacity-10 text-primary px-2 py-1 text-uppercase fw-semibold" style="font-size: 10px;">
+                            <i class="fas fa-microchip me-1"></i> STARS Decision System
+                        </span>
+                    </div>
+                    <h5 class="fw-bold text-dark mb-2">Analisis & Hasil Keputusan Akademik</h5>
+                    <p class="text-muted mb-3" style="font-size: 0.95rem; line-height: 1.5;">
+                        {{ $output }}
+                    </p>
+                    <div class="d-flex flex-wrap gap-2">
+                        <span class="badge bg-light text-dark border px-3 py-2"><i class="fas fa-clipboard-check text-muted me-1"></i> Kehadiran: <strong>{{ $inputs['attendance'] ?? '-' }}</strong></span>
+                        <span class="badge bg-light text-dark border px-3 py-2"><i class="fas fa-file-invoice text-muted me-1"></i> Pengumpulan Tugas: <strong>{{ $inputs['submission'] ?? '-' }}</strong></span>
+                        <span class="badge bg-light text-dark border px-3 py-2"><i class="fas fa-star text-muted me-1"></i> Kualitas Nilai: <strong>{{ $inputs['grades'] ?? '-' }}</strong></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     @if(session('success'))
         <div class="alert alert-success alert-dismissible fade show">
             {{ session('success') }}

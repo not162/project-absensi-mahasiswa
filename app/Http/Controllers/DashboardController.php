@@ -201,6 +201,42 @@ class DashboardController extends Controller
                 'tidak_hadir' => $allAttendances->where('status', 'tidak_hadir')->count(),
             ];
 
+            // Get all classes taught by this Dosen (distinct)
+            $scheduleClasses = Schedule::with('kelas')
+                ->where('user_id', $user->id)
+                ->get()
+                ->pluck('kelas')
+                ->filter()
+                ->unique('id');
+
+            // Generate Heatmap Data
+            $dosenScheduleIds = Schedule::where('user_id', $user->id)->pluck('id');
+            $meetings = ClassMeeting::with('schedule.kelas')
+                ->whereIn('schedule_id', $dosenScheduleIds)
+                ->orderBy('pertemuan_ke')
+                ->get();
+
+            $heatmapData = [];
+            foreach ($meetings as $meeting) {
+                $className = $meeting->schedule->kelas->nomor_kelas ?? 'Kelas -';
+                $courseName = $meeting->schedule->course->nama_matkul ?? 'Matkul';
+                $meetingNum = $meeting->pertemuan_ke;
+
+                // Total students in this class
+                $totalStudents = User::where('role', 'user')->where('class_id', $meeting->schedule->class_id)->count();
+
+                // Attended students in this meeting
+                $attendedCount = StudentAttendance::where('meeting_id', $meeting->id)->where('status', 'hadir')->count();
+
+                $percent = $totalStudents > 0 ? round(($attendedCount / $totalStudents) * 100) : 0;
+
+                $heatmapData[$courseName . ' (' . $className . ')'][$meetingNum] = [
+                    'percent' => $percent,
+                    'meeting_id' => $meeting->id,
+                    'date' => $meeting->tanggal ? \Carbon\Carbon::parse($meeting->tanggal)->format('d/m') : '-'
+                ];
+            }
+
             return view('dashboard.dosen', [
                 'totalMatkulDiampu'  => $totalMatkulDiampu,
                 'totalMahasiswa'     => $totalMahasiswa,
@@ -212,6 +248,8 @@ class DashboardController extends Controller
                 'classAttendanceSummary' => $classAttendanceSummary,
                 'lowAttendanceWarnings' => $lowAttendanceWarnings,
                 'dosenAttendanceStats' => $dosenAttendanceStats,
+                'scheduleClasses'    => $scheduleClasses,
+                'heatmapData'        => $heatmapData,
             ]);
         }
 
@@ -291,6 +329,9 @@ class DashboardController extends Controller
             }
         }
 
+        $analyticsService = app(\App\Services\StudentAnalyticsService::class);
+        $analysis = $analyticsService->analyze($user);
+
         return view('dashboard.user', [
             'user'            => $user,
             'kelas'           => $kelas,
@@ -306,6 +347,7 @@ class DashboardController extends Controller
             'grafikData'      => $grafikData,
             'activeMeetings'  => $activeMeetings,
             'lowAttendanceWarnings' => $lowAttendanceWarnings,
+            'analysis'        => $analysis,
         ]);
     }
 
@@ -332,5 +374,19 @@ class DashboardController extends Controller
         }
 
         return view('search.semantic', compact('query', 'results'));
+    }
+
+    /** Update Dosen custom AI Context/Note for a Class */
+    public function updateClassContextNote(\Illuminate\Http\Request $request)
+    {
+        $request->validate([
+            'class_id' => 'required|exists:classes,id',
+            'context_note' => 'nullable|string|max:1000',
+        ]);
+
+        $kelas = \App\Models\Kelas::findOrFail($request->class_id);
+        $kelas->update(['context_note' => $request->context_note]);
+
+        return back()->with('success', 'Catatan Latihan/Konteks Akademik AI Kelas berhasil diperbarui!');
     }
 }

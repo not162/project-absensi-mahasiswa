@@ -121,6 +121,11 @@ PROMPT;
         $kelasNomor = $student->kelas->nomor_kelas ?? '-';
         $semester = $student->kelas->semester ?? '-';
 
+        $dosenNoteText = "";
+        if ($student->kelas && $student->kelas->context_note) {
+            $dosenNoteText = "INSTRUKSI KHUSUS & CATATAN BIMBINGAN DARI DOSEN WALI/PENGAMPU KELAS:\n\"" . $student->kelas->context_note . "\"\n(Catatan Penting: Berikan prioritas atau penekanan bimbingan Anda agar selaras dengan arahan khusus dosen di atas kepada mahasiswa.)\n";
+        }
+
         return <<<CONTEXT
 DATA MAHASISWA:
 - Nama: {$student->name}
@@ -142,6 +147,8 @@ HASIL PREDIKSI RISIKO AKADEMIK (PHP MACHINE LEARNING MODEL):
 - Skor Risiko: {$prediction['risk_score']} / 100
 - Kategori Risiko: {$prediction['risk_level']}
 - Rekomendasi Sistem: {$prediction['recommendation']}
+
+{$dosenNoteText}
 CONTEXT;
     }
 }

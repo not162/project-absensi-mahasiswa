@@ -360,7 +360,6 @@ class SelfAttendanceController extends Controller
         return redirect()->back()->with('success', 'Umpan balik pengajaran berhasil dikirim.');
     }
 
-    /** Rekap Absen Mahasiswa */
     public function rekapAbsen()
     {
         $user = Auth::user();
@@ -370,6 +369,8 @@ class SelfAttendanceController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
-        return view('mahasiswa.rekap_absen', compact('attendances', 'user'));
+        $analysis = app(\App\Services\StudentAnalyticsService::class)->analyze($user);
+
+        return view('mahasiswa.rekap_absen', compact('attendances', 'user', 'analysis'));
     }
 }

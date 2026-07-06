@@ -128,6 +128,58 @@ class StudentAnalyticsService
             $recommendation = "Status luar biasa! Pertahankan kinerja akademik saat ini untuk meraih hasil terbaik.";
         }
 
+         // STARS Algorithm Rating System
+        $starsCount = 5;
+        $decisionInput = [];
+        $decisionOutput = "";
+
+        // Factor 1: Attendance
+        if ($attendanceRate >= 90.0) {
+            $decisionInput['attendance'] = 'Sangat Aktif (>= 90%)';
+        } elseif ($attendanceRate >= 75.0) {
+            $decisionInput['attendance'] = 'Cukup Aktif (75% - 89%)';
+            $starsCount -= 1;
+        } else {
+            $decisionInput['attendance'] = 'Kritis (< 75%)';
+            $starsCount -= 2;
+        }
+
+        // Factor 2: Assignment Submission
+        if ($submissionRate >= 90.0) {
+            $decisionInput['submission'] = 'Sangat Patuh (>= 90%)';
+        } elseif ($submissionRate >= 70.0) {
+            $decisionInput['submission'] = 'Cukup Patuh (70% - 89%)';
+            $starsCount -= 1;
+        } else {
+            $decisionInput['submission'] = 'Kurang Patuh (< 70%)';
+            $starsCount -= 2;
+        }
+
+        // Factor 3: Grades
+        $combinedGrade = ($averageExamGrade > 0) ? ($averageExamGrade * 0.7 + $averageAssignmentGrade * 0.3) : $averageAssignmentGrade;
+        if ($combinedGrade >= 80.0) {
+            $decisionInput['grades'] = 'Sangat Baik (>= 80)';
+        } elseif ($combinedGrade >= 60.0) {
+            $decisionInput['grades'] = 'Cukup/C (60 - 79)';
+            if ($starsCount > 2) $starsCount -= 1;
+        } else {
+            $decisionInput['grades'] = 'Rendah/D/E (< 60)';
+            $starsCount = max(1, $starsCount - 2);
+        }
+
+        $starsCount = max(1, $starsCount);
+
+        // Decision Making Response (Output)
+        if ($starsCount === 5) {
+            $decisionOutput = "Rekomendasi Utama: Pertahankan keaktifan Anda! Anda siap menghadapi ujian teori maupun membuat proyek berskala industri (best-practice) dengan hasil memuaskan.";
+        } elseif ($starsCount === 4) {
+            $decisionOutput = "Rekomendasi Utama: Tingkatkan kehadiran atau ketepatan pengumpulan tugas Anda. Lakukan review materi teori minimal 2 jam per minggu untuk mengamankan nilai A.";
+        } elseif ($starsCount === 3) {
+            $decisionOutput = "Rekomendasi Utama: Segera diskusikan dengan dosen pengampu. Rencanakan struktur belajar menggunakan metode Active Recall dan luangkan waktu untuk membaca dokumentasi project standard.";
+        } else {
+            $decisionOutput = "TINDAKAN DARURAT: Anda terancam tidak lulus semester ini. Buat jadwal bimbingan khusus, perbaiki tingkat absensi, dan ulangi materi fundamental sesegera mungkin.";
+        }
+
         return [
             'metrics' => [
                 'attendance_rate' => round($attendanceRate, 1),
@@ -146,6 +198,11 @@ class StudentAnalyticsService
                 'risk_color' => $riskColor,
                 'reasons' => $reasons,
                 'recommendation' => $recommendation,
+            ],
+            'stars_analysis' => [
+                'stars_count' => $starsCount,
+                'decision_input' => $decisionInput,
+                'decision_output' => $decisionOutput,
             ]
         ];
     }

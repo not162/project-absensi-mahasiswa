@@ -234,6 +234,110 @@
         </div>
     </div>
 
+    {{-- Heatmap & TrueModels AI Trainer Row --}}
+    <div class="row mt-4 g-4">
+        {{-- Heatmap Kehadiran --}}
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-0 py-3">
+                    <h5 class="fw-bold mb-0 text-dark">
+                        <i class="fas fa-th text-danger me-2"></i> Heatmap Alur Kehadiran Kelas (Pertemuan 1 - 16)
+                    </h5>
+                    <small class="text-muted">Gradasi keaktifan mahasiswa di setiap pertemuan kelas</small>
+                </div>
+                <div class="card-body">
+                    @forelse($heatmapData as $label => $meetings)
+                        <div class="mb-4">
+                            <h6 class="fw-bold text-dark mb-2 small">{{ $label }}</h6>
+                            <div class="d-flex flex-wrap gap-1">
+                                @for($m = 1; $m <= 16; $m++)
+                                    @php
+                                        $mtData = $meetings[$m] ?? null;
+                                        $percent = $mtData ? $mtData['percent'] : null;
+                                        $colorClass = 'bg-light text-muted border'; // default
+                                        
+                                        if ($percent !== null) {
+                                            if ($percent >= 90) {
+                                                $colorClass = 'bg-success text-white border-success';
+                                            } elseif ($percent >= 75) {
+                                                $colorClass = 'bg-warning text-dark border-warning';
+                                            } else {
+                                                $colorClass = 'bg-danger text-white border-danger';
+                                            }
+                                        }
+                                    @endphp
+                                    <div class="rounded d-flex flex-column align-items-center justify-content-center border {{ $colorClass }} shadow-2xs" 
+                                         style="width: 42px; height: 42px; font-size: 9px;" 
+                                         title="{{ $percent !== null ? 'Pertemuan ' . $m . ': ' . $percent . '% Hadir' : 'Pertemuan ' . $m . ': Belum Berlangsung' }}">
+                                        <span class="fw-extrabold" style="font-size: 8px;">P-{{ $m }}</span>
+                                        <span class="fw-bold" style="font-size: 10px;">{{ $percent !== null ? $percent . '%' : '-' }}</span>
+                                    </div>
+                                @endfor
+                            </div>
+                        </div>
+                    @empty
+                        <div class="text-center py-5 text-muted">
+                            <i class="fas fa-calendar-times fa-2x mb-2 d-block"></i>
+                            Belum ada riwayat pertemuan/absen untuk kelas Anda.
+                        </div>
+                    @endforelse
+                    
+                    <div class="mt-2 pt-2 border-top d-flex gap-3 small text-muted justify-content-center">
+                        <div><span class="d-inline-block rounded bg-success border" style="width:12px; height:12px; vertical-align:middle;"></span> >=90% Hadir</div>
+                        <div><span class="d-inline-block rounded bg-warning border" style="width:12px; height:12px; vertical-align:middle;"></span> 75-89% Hadir</div>
+                        <div><span class="d-inline-block rounded bg-danger border" style="width:12px; height:12px; vertical-align:middle;"></span> &lt;75% Hadir</div>
+                        <div><span class="d-inline-block rounded bg-light border" style="width:12px; height:12px; vertical-align:middle;"></span> Belum Mulai</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- TrueModels AI Context Trainer Panel --}}
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm h-100 bg-white">
+                <div class="card-header bg-white border-0 py-3">
+                    <h5 class="fw-bold mb-0 text-dark">
+                        <i class="fas fa-brain text-info me-2"></i> TrueModels AI Context Trainer
+                    </h5>
+                    <small class="text-muted">Latih & modifikasi context window asisten AI (MyUniv) bagi mahasiswa Anda</small>
+                </div>
+                <div class="card-body">
+                    <form action="{{ route('dosen.class.context.update') }}" method="POST">
+                        @csrf
+                        <div class="mb-3">
+                            <label for="class_id" class="form-label fw-bold text-dark small">Pilih Kelas:</label>
+                            <select name="class_id" id="class_id" class="form-select text-dark" required onchange="loadContextNote(this)">
+                                <option value="" disabled selected>-- Pilih Kelas Anda --</option>
+                                @foreach($scheduleClasses as $c)
+                                    <option value="{{ $c->id }}" data-note="{{ $c->context_note }}">{{ $c->department->name ?? '-' }} - Kelas {{ $c->nomor_kelas }} (Semester {{ $c->semester }})</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="context_note" class="form-label fw-bold text-dark small">Catatan Bimbingan / Petunjuk Pembelajaran AI:</label>
+                            <textarea name="context_note" id="context_note" class="form-control text-dark" rows="5" placeholder="Contoh: Fokuskan bimbingan minggu ini pada pengerjaan tugas proyek akhir berbasis best-practice Laravel, serta ingatkan mahasiswa agar absensi teori tidak di bawah 75% karena sudah mendekati UTS..." required></textarea>
+                            <small class="text-muted d-block mt-1">Catatan ini secara real-time disuntikkan ke dalam *Context Window* (RAG) chatbot MyUniv mahasiswa kelas terpilih.</small>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary text-white w-100 fw-bold">
+                            <i class="fas fa-save me-1"></i> Simpan & Latih AI Context
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function loadContextNote(selectElement) {
+            const selectedOption = selectElement.options[selectElement.selectedIndex];
+            const note = selectedOption.getAttribute('data-note') || '';
+            document.getElementById('context_note').value = note;
+        }
+    </script>
+</div>
+
 </div>
 
 @if(array_sum($dosenAttendanceStats ?? []) > 0)
