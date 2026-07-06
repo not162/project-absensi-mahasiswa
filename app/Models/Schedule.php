@@ -21,6 +21,7 @@ class Schedule extends Model
         'link_online',
         'kode_online',
         'tahun_ajaran',
+        'absen_darimana_saja',
     ];
 
     /** Mata kuliah yang dijadwalkan */

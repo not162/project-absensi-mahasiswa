@@ -140,10 +140,20 @@
                                     <i class="fas fa-chart-bar me-2"></i> Laporan
                                 </a>
                             </li>
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('exam.replacement.admin.index') ? 'active' : '' }}" href="{{ route('exam.replacement.admin.index') }}">
+                                    <i class="fas fa-file-invoice me-2"></i> Ujian Pengganti
+                                </a>
+                            </li>
                         @elseif(auth()->user()->role === 'dosen')
                             <li class="nav-item">
                                 <a class="nav-link {{ request()->routeIs('schedules.byDosen') ? 'active' : '' }}" href="{{ route('schedules.byDosen', auth()->user()) }}">
                                     <i class="fas fa-calendar me-2"></i> Jadwal Saya
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('schedules.index') ? 'active' : '' }}" href="{{ route('schedules.index') }}">
+                                    <i class="fas fa-calendar-alt me-2"></i> Kelola Jadwal
                                 </a>
                             </li>
                             <li class="nav-item">
@@ -154,6 +164,11 @@
                             <li class="nav-item">
                                 <a class="nav-link {{ request()->routeIs('exam.*') ? 'active' : '' }}" href="{{ route('exam.index', ['tipe' => 'uts']) }}">
                                     <i class="fas fa-file-signature me-2"></i> Jadwal Ujian
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('exam.replacement.admin.index') ? 'active' : '' }}" href="{{ route('exam.replacement.admin.index') }}">
+                                    <i class="fas fa-file-invoice me-2"></i> Ujian Pengganti
                                 </a>
                             </li>
                             <li class="nav-item">
@@ -170,6 +185,16 @@
                             <li class="nav-item">
                                 <a class="nav-link {{ request()->routeIs('exam.*') ? 'active' : '' }}" href="{{ route('exam.index', ['tipe' => 'uts']) }}">
                                     <i class="fas fa-file-signature me-2"></i> Ujian
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('exam.replacement.index') ? 'active' : '' }}" href="{{ route('exam.replacement.index') }}">
+                                    <i class="fas fa-file-invoice me-2"></i> Ujian Pengganti
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('mahasiswa.rekap_absen') ? 'active' : '' }}" href="{{ route('mahasiswa.rekap_absen') }}">
+                                    <i class="fas fa-history me-2"></i> Rekap Absensi
                                 </a>
                             </li>
                             <li class="nav-item">
@@ -323,11 +348,9 @@
                                 return;
                             }
 
-                            if (data.latest_timestamp > lastTimestamp) {
+                             if (data.latest_timestamp > lastTimestamp) {
                                 lastTimestamp = data.latest_timestamp;
-                                if (confirm('Terdapat pembaruan data absensi terbaru. Muat ulang halaman?')) {
-                                    window.location.reload();
-                                }
+                                window.location.reload();
                             }
                         })
                         .catch(err => {
@@ -350,7 +373,7 @@
                                 } catch (e) { }
                             }
                         });
-                }, 5000); // Poll every 5 seconds
+                }, 3000); // Poll every 3 seconds
             }
         });
     </script>

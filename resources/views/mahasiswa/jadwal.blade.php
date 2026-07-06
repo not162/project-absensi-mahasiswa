@@ -64,50 +64,145 @@
             {{-- Self Check-In (hanya hari ini & pertemuan sudah dibuka dosen) --}}
             @if($isHariIni)
                 @if($meeting)
-                    <div class="border rounded p-3 mb-3 bg-light">
-                        <strong>Pertemuan Ke-{{ $meeting->pertemuan_ke }}</strong>
-                        @if($meeting->materi) <span class="text-muted ms-2">— {{ $meeting->materi }}</span> @endif
+                    <div class="border rounded-3 p-4 mb-3 bg-white shadow-sm border-warning">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <span class="badge bg-warning text-dark px-3 py-2 fw-bold"><i class="fas fa-play-circle me-1"></i> PERTEMUAN KE-{{ $meeting->pertemuan_ke }} AKTIF</span>
+                            @if($meeting->materi)
+                                <span class="text-muted fw-semibold">{{ $meeting->materi }}</span>
+                            @endif
+                        </div>
 
-                        @if($myStatus)
-                            <div class="mt-2">
-                                Status absensi kamu:
-                                <span class="badge bg-primary">{{ ucfirst(str_replace('_',' ',$myStatus)) }}</span>
-                                <small class="text-muted ms-2">(Dosen dapat mengubah status ini)</small>
-                            </div>
-                            <form action="{{ route('mahasiswa.checkin') }}" method="POST" class="mt-2" onsubmit="return handleUpdateCheckin(event, this, {{ $schedule->id }})">
-                                @csrf
-                                <input type="hidden" name="schedule_id" value="{{ $schedule->id }}">
-                                <input type="hidden" name="latitude" class="lat-input">
-                                <input type="hidden" name="longitude" class="lng-input">
-                                <div class="d-flex gap-2 align-items-center">
-                                    <select name="status" class="form-select form-select-sm w-auto" id="status-select-{{ $schedule->id }}">
-                                        @foreach(['hadir'=>'Hadir','izin'=>'Izin','sakit'=>'Sakit','tidak_hadir'=>'Tidak Hadir'] as $val=>$label)
-                                        <option value="{{ $val }}" @selected($myStatus===$val)>{{ $label }}</option>
-                                        @endforeach
-                                    </select>
-                                    <button type="submit" class="btn btn-sm btn-outline-primary">Perbarui</button>
+                        <!-- Grid Info Row 1 & Row 2 -->
+                        <div class="row g-3 mb-3 text-center">
+                            <!-- Card 1: Dosen -->
+                            <div class="col-md-2 col-6">
+                                <div class="card border-0 shadow-sm bg-light py-3 h-100">
+                                    <span class="text-muted small uppercase fw-semibold d-block mb-1" style="font-size: 11px;">Dosen</span>
+                                    <h5 class="fw-bold text-primary mb-0" style="font-size: 16px;">{{ $schedule->lecturer->name ?? '-' }}</h5>
                                 </div>
-                            </form>
-                        @else
-                            <div class="mt-2">
-                                <p class="mb-2 text-muted small">Pertemuan sudah dibuka — catat kehadiranmu:</p>
-                                <form action="{{ route('mahasiswa.checkin') }}" method="POST">
-                                    @csrf
-                                    <input type="hidden" name="schedule_id" value="{{ $schedule->id }}">
-                                    <input type="hidden" name="status" class="status-input" value="hadir">
-                                    <div class="d-flex gap-2 flex-wrap">
-                                        <button type="button" onclick="openCheckinModal({{ $schedule->id }})" class="btn btn-sm btn-primary">
-                                            Hadir
-                                        </button>
-                                        @foreach(['izin'=>['warning','Izin'],'sakit'=>['info','Sakit'],'tidak_hadir'=>['secondary','Tidak Hadir']] as $val=>[$color,$label])
-                                        <button type="submit" onclick="this.form.querySelector('.status-input').value='{{ $val }}'" class="btn btn-sm btn-{{ $color }}">
-                                            {{ $label }}
-                                        </button>
-                                        @endforeach
-                                    </div>
-                                </form>
                             </div>
-                        @endif
+                            <!-- Card 2: Matakuliah -->
+                            <div class="col-md-3 col-6">
+                                <div class="card border-0 shadow-sm bg-light py-3 h-100">
+                                    <span class="text-muted small uppercase fw-semibold d-block mb-1" style="font-size: 11px;">Matakuliah</span>
+                                    <h5 class="fw-bold text-dark mb-0 text-truncate px-2" style="font-size: 15px;">{{ $schedule->course->nama_matkul ?? '-' }}</h5>
+                                </div>
+                            </div>
+                            <!-- Card 3: Jam Masuk -->
+                            <div class="col-md-2 col-6">
+                                <div class="card border-0 shadow-sm bg-light py-3 h-100">
+                                    <span class="text-muted small uppercase fw-semibold d-block mb-1" style="font-size: 11px;">Jam Masuk</span>
+                                    <h5 class="fw-bold text-success mb-0" style="font-size: 16px;">{{ substr($schedule->jam_mulai, 0, 5) }}</h5>
+                                </div>
+                            </div>
+                            <!-- Card 4: Jam Keluar -->
+                            <div class="col-md-2 col-6">
+                                <div class="card border-0 shadow-sm bg-light py-3 h-100">
+                                    <span class="text-muted small uppercase fw-semibold d-block mb-1" style="font-size: 11px;">Jam Keluar</span>
+                                    <h5 class="fw-bold text-danger mb-0" style="font-size: 16px;">{{ substr($schedule->jam_selesai, 0, 5) }}</h5>
+                                </div>
+                            </div>
+                            <!-- Card 5: Evaluasi Pengajaran (Form Komentar) -->
+                            <div class="col-md-3 col-12">
+                                <div class="card border shadow-sm py-2 px-3 h-100 bg-white text-start border-warning bg-warning bg-opacity-10">
+                                    <form action="{{ route('mahasiswa.attendance.feedback') }}" method="POST">
+                                        @csrf
+                                        <input type="hidden" name="schedule_id" value="{{ $schedule->id }}">
+                                        <label class="fw-semibold text-dark mb-1" style="font-size: 11px;">Berikan Komentar Anda Terhadap Pengajar Dosen</label>
+                                        <textarea name="feedback_dosen" class="form-control form-control-sm mb-2" rows="2" placeholder="Tulis komentar..." required style="font-size: 11px;">{{ \App\Models\StudentAttendance::where('meeting_id', $meeting->id)->where('student_id', $user->id)->first()?->feedback_dosen }}</textarea>
+                                        <div class="d-flex gap-2 align-items-center mb-2">
+                                            @php
+                                                $curFeedbackSesuai = \App\Models\StudentAttendance::where('meeting_id', $meeting->id)->where('student_id', $user->id)->first()?->feedback_sesuai;
+                                            @endphp
+                                            <div class="form-check form-check-inline mb-0">
+                                                <input class="form-check-input" type="radio" name="feedback_sesuai" id="sesuai-{{ $schedule->id }}" value="Sesuai" required @checked($curFeedbackSesuai === 'Sesuai')>
+                                                <label class="form-check-label text-dark" for="sesuai-{{ $schedule->id }}" style="font-size: 10px; cursor: pointer;">Pengajaran Sesuai</label>
+                                            </div>
+                                            <div class="form-check form-check-inline mb-0">
+                                                <input class="form-check-input" type="radio" name="feedback_sesuai" id="tidak-sesuai-{{ $schedule->id }}" value="Tidak Sesuai" @checked($curFeedbackSesuai === 'Tidak Sesuai')>
+                                                <label class="form-check-label text-dark" for="tidak-sesuai-{{ $schedule->id }}" style="font-size: 10px; cursor: pointer;">Pengajaran Tidak Sesuai</label>
+                                            </div>
+                                        </div>
+                                        <button type="submit" class="btn btn-sm btn-primary w-100 py-1" style="font-size: 11px;">Kirim</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mb-4 text-center">
+                            <!-- Card 1: Ruang -->
+                            <div class="col-md-3 col-6">
+                                <div class="card border-0 shadow-sm bg-light py-3 h-100">
+                                    <span class="text-muted small uppercase fw-semibold d-block mb-1" style="font-size: 11px;">Ruang</span>
+                                    <h5 class="fw-bold text-dark mb-0" style="font-size: 15px;">{{ $schedule->ruangan ?? 'Online' }}</h5>
+                                </div>
+                            </div>
+                            <!-- Card 2: Kelas -->
+                            <div class="col-md-3 col-6">
+                                <div class="card border-0 shadow-sm bg-light py-3 h-100">
+                                    <span class="text-muted small uppercase fw-semibold d-block mb-1" style="font-size: 11px;">Kelas</span>
+                                    <h5 class="fw-bold text-dark mb-0" style="font-size: 15px;">{{ $schedule->kelas->nomor_kelas ?? '-' }}</h5>
+                                </div>
+                            </div>
+                            <!-- Card 3: Hari -->
+                            <div class="col-md-3 col-6">
+                                <div class="card border-0 shadow-sm bg-light py-3 h-100">
+                                    <span class="text-muted small uppercase fw-semibold d-block mb-1" style="font-size: 11px;">Hari</span>
+                                    <h5 class="fw-bold text-dark mb-0" style="font-size: 15px;">{{ $schedule->hari }}</h5>
+                                </div>
+                            </div>
+                            <!-- Card 4: Kode MTK -->
+                            <div class="col-md-3 col-6">
+                                <div class="card border-0 shadow-sm bg-light py-3 h-100">
+                                    <span class="text-muted small uppercase fw-semibold d-block mb-1" style="font-size: 11px;">Kode MTK</span>
+                                    <h5 class="fw-bold text-dark mb-0" style="font-size: 15px;">{{ $schedule->course->kode_matkul ?? '-' }}</h5>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Check-in buttons or Status -->
+                        <div class="d-flex justify-content-between align-items-center mt-3 p-3 border rounded bg-white">
+                            <div>
+                                @if($myStatus)
+                                    <span class="text-muted small">Status Kehadiran Anda:</span>
+                                    <span class="badge bg-{{ $myStatus === 'hadir' ? 'success' : 'danger' }} fs-6 ms-2">
+                                        {{ strtoupper(str_replace('_',' ',$myStatus)) }}
+                                    </span>
+                                @else
+                                    <span class="text-muted small">Pertemuan sedang aktif! Silakan lakukan check-in.</span>
+                                @endif
+                            </div>
+                            <div>
+                                @if(!$myStatus)
+                                    <form action="{{ route('mahasiswa.checkin') }}" method="POST" class="d-inline">
+                                        @csrf
+                                        <input type="hidden" name="schedule_id" value="{{ $schedule->id }}">
+                                        <input type="hidden" name="status" class="status-input" value="hadir">
+                                        <button type="button" onclick="openCheckinModal({{ $schedule->id }}, {{ $schedule->absen_darimana_saja ? 'true' : 'false' }})" class="btn btn-success px-4 fw-bold me-2">
+                                            <i class="fas fa-check me-1"></i> Hadir
+                                        </button>
+                                        <button type="submit" onclick="this.form.querySelector('.status-input').value='tidak_hadir'" class="btn btn-danger px-4 fw-bold">
+                                            <i class="fas fa-times me-1"></i> Tidak Hadir
+                                        </button>
+                                    </form>
+                                @else
+                                    <form action="{{ route('mahasiswa.checkin') }}" method="POST" class="d-inline" onsubmit="return handleUpdateCheckin(event, this, {{ $schedule->id }}, {{ $schedule->absen_darimana_saja ? 'true' : 'false' }})">
+                                        @csrf
+                                        <input type="hidden" name="schedule_id" value="{{ $schedule->id }}">
+                                        <input type="hidden" name="latitude" class="lat-input">
+                                        <input type="hidden" name="longitude" class="lng-input">
+                                        <div class="d-flex gap-2 align-items-center">
+                                            <select name="status" class="form-select form-select-sm w-auto" id="status-select-{{ $schedule->id }}">
+                                                @foreach(['hadir'=>'Hadir','izin'=>'Izin','sakit'=>'Sakit','tidak_hadir'=>'Tidak Hadir'] as $val=>$label)
+                                                <option value="{{ $val }}" @selected($myStatus===$val)>{{ $label }}</option>
+                                                @endforeach
+                                            </select>
+                                            <button type="submit" class="btn btn-sm btn-outline-primary">Perbarui Status</button>
+                                        </div>
+                                    </form>
+                                @endif
+                            </div>
+                        </div>
                     </div>
                 @else
                     <div class="alert alert-light border mb-3 py-2">
@@ -264,12 +359,14 @@
     let userMarker = null;
     let campusCircle = null;
     let checkinModalObj = null;
+    let currentAbsenDarimanaSaja = false;
 
     const CAMPUS_LAT = {{ env('CAMPUS_LATITUDE', -6.175392) }};
     const CAMPUS_LNG = {{ env('CAMPUS_LONGITUDE', 106.827153) }};
 
-    function openCheckinModal(scheduleId) {
+    function openCheckinModal(scheduleId, absenDarimanaSaja = false) {
         document.getElementById('modal-schedule-id').value = scheduleId;
+        currentAbsenDarimanaSaja = absenDarimanaSaja;
         
         // Show modal using Bootstrap API
         if (!checkinModalObj) {
@@ -312,8 +409,14 @@
 
             // Get user location
             if (!navigator.geolocation) {
-                statusDiv.className = "alert alert-danger py-2";
-                statusDiv.innerHTML = '<i class="fas fa-exclamation-triangle me-2"></i>Geolocation tidak didukung oleh browser Anda.';
+                if (currentAbsenDarimanaSaja) {
+                    statusDiv.className = "alert alert-success py-2";
+                    statusDiv.innerHTML = '<i class="fas fa-check-circle me-2"></i>Absen Darimana Saja Aktif (Browser tidak mendukung Geolocation).';
+                    submitBtn.disabled = false;
+                } else {
+                    statusDiv.className = "alert alert-danger py-2";
+                    statusDiv.innerHTML = '<i class="fas fa-exclamation-triangle me-2"></i>Geolocation tidak didukung oleh browser Anda.';
+                }
                 return;
             }
 
@@ -350,9 +453,13 @@
                     // Calculate distance using Haversine formula
                     const distance = calculateDistance(lat, lng, CAMPUS_LAT, CAMPUS_LNG);
                     
-                    if (distance <= 200) {
+                    if (currentAbsenDarimanaSaja || distance <= 200) {
                         statusDiv.className = "alert alert-success py-2";
-                        statusDiv.innerHTML = `<i class="fas fa-check-circle me-2"></i>Lokasi Terverifikasi! Anda berada di radius kampus (Jarak: ${Math.round(distance)} meter).`;
+                        if (currentAbsenDarimanaSaja) {
+                            statusDiv.innerHTML = `<i class="fas fa-check-circle me-2"></i>Absen Darimana Saja Aktif! (Jarak ke Kampus: ${Math.round(distance)} meter).`;
+                        } else {
+                            statusDiv.innerHTML = `<i class="fas fa-check-circle me-2"></i>Lokasi Terverifikasi! Anda berada di radius kampus (Jarak: ${Math.round(distance)} meter).`;
+                        }
                         submitBtn.disabled = false;
                     } else {
                         statusDiv.className = "alert alert-danger py-2";
@@ -361,19 +468,25 @@
                     }
                 },
                 function(error) {
-                    statusDiv.className = "alert alert-danger py-2";
-                    statusDiv.innerHTML = '<i class="fas fa-exclamation-triangle me-2"></i>Akses lokasi ditolak atau gagal didapatkan. Mohon izinkan lokasi.';
+                    if (currentAbsenDarimanaSaja) {
+                        statusDiv.className = "alert alert-success py-2";
+                        statusDiv.innerHTML = '<i class="fas fa-check-circle me-2"></i>Absen Darimana Saja Aktif! (Lokasi tidak dibagikan).';
+                        submitBtn.disabled = false;
+                    } else {
+                        statusDiv.className = "alert alert-danger py-2";
+                        statusDiv.innerHTML = '<i class="fas fa-exclamation-triangle me-2"></i>Akses lokasi ditolak atau gagal didapatkan. Mohon izinkan lokasi.';
+                    }
                 },
                 { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
             );
         }, 500);
     }
 
-    function handleUpdateCheckin(event, form, scheduleId) {
+    function handleUpdateCheckin(event, form, scheduleId, absenDarimanaSaja = false) {
         const select = document.getElementById('status-select-' + scheduleId);
         if (select && select.value === 'hadir') {
             event.preventDefault();
-            openCheckinModal(scheduleId);
+            openCheckinModal(scheduleId, absenDarimanaSaja);
             return false;
         }
         return true; // Proceed with normal submit for non-hadir
@@ -396,7 +509,14 @@
         let qrScanId = urlParams.get('qr_scan');
         
         if (qrScanId) {
-            openCheckinModal(qrScanId);
+            // Find if this schedule has anywhere attendance
+            let btn = document.querySelector(`button[onclick^="openCheckinModal(${qrScanId}"]`);
+            let isAnywhere = false;
+            if (btn) {
+                let onclickStr = btn.getAttribute('onclick');
+                isAnywhere = onclickStr.includes('true');
+            }
+            openCheckinModal(qrScanId, isAnywhere);
             
             // Remove param from URL so it doesn't re-trigger on refresh
             window.history.replaceState(null, null, window.location.pathname);

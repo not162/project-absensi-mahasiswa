@@ -91,8 +91,8 @@ class SelfAttendanceController extends Controller
             return redirect()->back()->with('error', 'Pertemuan hari ini belum dibuka oleh dosen.');
         }
 
-        // Validasi Geolocation jika status "hadir"
-        if ($request->status === 'hadir') {
+        // Validasi Geolocation jika status "hadir" dan tidak diperbolehkan absen darimana saja
+        if ($request->status === 'hadir' && !$schedule->absen_darimana_saja) {
             if (!$request->latitude || !$request->longitude) {
                 return redirect()->back()->with('error', 'Akses lokasi diperlukan untuk absen hadir.');
             }
@@ -334,5 +334,49 @@ class SelfAttendanceController extends Controller
             ->get();
 
         return view('mahasiswa.jadwal_kelas', compact('schedules', 'departments', 'selectedDeptId', 'user'));
+    }
+
+    /** Simpan feedback pengajaran dosen */
+    public function storeFeedback(Request $request)
+    {
+        $request->validate([
+            'schedule_id'     => 'required|exists:schedules,id',
+            'feedback_dosen'  => 'required|string|max:500',
+            'feedback_sesuai' => 'required|in:Sesuai,Tidak Sesuai',
+        ]);
+
+        $user  = Auth::user();
+        $today = Carbon::today();
+
+        $meeting = ClassMeeting::where('schedule_id', $request->schedule_id)
+            ->whereDate('tanggal', $today)
+            ->first();
+
+        if (!$meeting) {
+            return redirect()->back()->with('error', 'Pertemuan tidak ditemukan.');
+        }
+
+        StudentAttendance::updateOrCreate(
+            ['meeting_id' => $meeting->id, 'student_id' => $user->id],
+            [
+                'feedback_dosen'  => $request->feedback_dosen,
+                'feedback_sesuai' => $request->feedback_sesuai,
+            ]
+        );
+
+        return redirect()->back()->with('success', 'Umpan balik pengajaran berhasil dikirim.');
+    }
+
+    /** Rekap Absen Mahasiswa */
+    public function rekapAbsen()
+    {
+        $user = Auth::user();
+        
+        $attendances = StudentAttendance::with(['meeting.schedule.course', 'meeting.schedule.lecturer'])
+            ->where('student_id', $user->id)
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return view('mahasiswa.rekap_absen', compact('attendances', 'user'));
     }
 }

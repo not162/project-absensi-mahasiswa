@@ -89,6 +89,7 @@ class ScheduleController extends Controller
 
         $data = $request->all();
         $data['is_replacement'] = $request->has('is_replacement') ? 1 : 0;
+        $data['absen_darimana_saja'] = $request->has('absen_darimana_saja') ? 1 : 0;
 
         Schedule::create($data);
 
@@ -126,6 +127,7 @@ class ScheduleController extends Controller
 
         $data = $request->all();
         $data['is_replacement'] = $request->has('is_replacement') ? 1 : 0;
+        $data['absen_darimana_saja'] = $request->has('absen_darimana_saja') ? 1 : 0;
 
         $schedule->update($data);
 

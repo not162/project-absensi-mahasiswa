@@ -1,7 +1,7 @@
 <nav class="navbar navbar-expand-lg navbar-dark">
     <div class="container-fluid">
         <a class="navbar-brand fw-bold" href="{{ route('dashboard') }}">
-            <i class="fas fa-clipboard-check me-2"></i> Sistem Absensi
+            <i class="fas fa-university me-2"></i> Univ Tangsel Raya
         </a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
             <span class="navbar-toggler-icon"></span>
@@ -49,6 +49,9 @@
                                 <li><a class="dropdown-item" href="{{ route('repeats.index') }}">
                                     <i class="fas fa-redo me-1"></i> Pengajuan Pengulangan
                                 </a></li>
+                                <li><a class="dropdown-item" href="{{ route('exam.replacement.admin.index') }}">
+                                    <i class="fas fa-file-invoice me-1"></i> Pengajuan Ujian Pengganti
+                                </a></li>
                                 <li><a class="dropdown-item" href="{{ route('teaching-attendance.history') }}">
                                     <i class="fas fa-history me-1"></i> Riwayat Absen Mengajar
                                 </a></li>
@@ -78,6 +81,16 @@
                                 <i class="fas fa-user-shield me-1"></i> Jadwal Mengawas
                             </a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-white" href="{{ route('exam.replacement.admin.index') }}">
+                                <i class="fas fa-file-invoice me-1"></i> Ujian Pengganti
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-white" href="{{ route('schedules.index') }}">
+                                <i class="fas fa-calendar-alt me-1"></i> Kelola Jadwal
+                            </a>
+                        </li>
                     @else
                         <li class="nav-item">
                             <a class="nav-link text-white {{ request()->routeIs('dashboard') ? 'active fw-bold' : '' }}" href="{{ route('dashboard') }}">
@@ -97,6 +110,16 @@
                         <li class="nav-item">
                             <a class="nav-link text-white {{ request()->routeIs('mahasiswa.toefl') ? 'active fw-bold' : '' }}" href="{{ route('mahasiswa.toefl') }}">
                                 <i class="fas fa-language me-1"></i> Ujian TOEFL/IELTS
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-white {{ request()->routeIs('exam.replacement.index') ? 'active fw-bold' : '' }}" href="{{ route('exam.replacement.index') }}">
+                                <i class="fas fa-file-invoice me-1"></i> Ujian Pengganti
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-white {{ request()->routeIs('mahasiswa.rekap_absen') ? 'active fw-bold' : '' }}" href="{{ route('mahasiswa.rekap_absen') }}">
+                                <i class="fas fa-history me-1"></i> Rekap Absensi
                             </a>
                         </li>
                         <li class="nav-item">

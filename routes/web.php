@@ -20,6 +20,7 @@ use App\Http\Controllers\SelfAttendanceController;
 use App\Http\Controllers\TeachingAttendanceController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\StudentAttendanceController;
+use App\Http\Controllers\ExamReplacementController;
 
 Route::get('/', function () {
     if (auth()->check()) {
@@ -84,9 +85,8 @@ Route::middleware('auth')->group(function () {
             Route::post('/export', [ReportController::class, 'export'])->name('reports.export');
         });
 
-        // Schedules & Exams (Admin CRUD)
-        Route::resource('schedules', ScheduleController::class)->except(['index', 'show']);
-        Route::get('/schedules', [ScheduleController::class, 'index'])->name('schedules.index');
+        // Exams (Admin CRUD)
+        Route::resource('exam', ExamScheduleController::class)->except(['index', 'show']);
         
         Route::prefix('exam')->group(function () {
             Route::get('/create', [ExamScheduleController::class, 'create'])->name('exam.create');
@@ -134,6 +134,15 @@ Route::middleware('auth')->group(function () {
         Route::get('/absensi/{schedule}/start', [StudentAttendanceController::class, 'startAbsensi'])->name('absensi.start');
         Route::post('/absensi/store', [StudentAttendanceController::class, 'store'])->name('absensi.store');
         Route::get('/absensi/rekap', [StudentAttendanceController::class, 'rekap'])->name('absensi.rekap');
+
+        // Schedules CRUD (Admin & Dosen)
+        Route::resource('schedules', ScheduleController::class)->except(['index', 'show']);
+        Route::get('/schedules', [ScheduleController::class, 'index'])->name('schedules.index');
+
+        // Ujian Pengganti (Admin & Dosen)
+        Route::get('/admin/exam-replacements', [ExamReplacementController::class, 'adminIndex'])->name('exam.replacement.admin.index');
+        Route::post('/admin/exam-replacements/{replacement}/approve', [ExamReplacementController::class, 'approve'])->name('exam.replacement.approve');
+        Route::post('/admin/exam-replacements/{replacement}/reject', [ExamReplacementController::class, 'reject'])->name('exam.replacement.reject');
     });
 
     // ──────────────────────────────────────────────────────────
@@ -189,6 +198,12 @@ Route::middleware('auth')->group(function () {
         Route::post('/toefl-exam/submit', [SelfAttendanceController::class, 'submitToefl'])->name('mahasiswa.toefl.submit');
         Route::get('/toefl-exam/result/{id}', [SelfAttendanceController::class, 'toeflResult'])->name('mahasiswa.toefl.result');
         Route::get('/jadwal-kelas', [SelfAttendanceController::class, 'jadwalKelas'])->name('mahasiswa.jadwal_kelas');
+
+        // Ujian Pengganti (Mahasiswa)
+        Route::get('/exam-replacements', [ExamReplacementController::class, 'index'])->name('exam.replacement.index');
+        Route::post('/exam-replacements', [ExamReplacementController::class, 'store'])->name('exam.replacement.store');
+        Route::post('/attendance/feedback', [SelfAttendanceController::class, 'storeFeedback'])->name('mahasiswa.attendance.feedback');
+        Route::get('/mahasiswa/rekap-absen', [SelfAttendanceController::class, 'rekapAbsen'])->name('mahasiswa.rekap_absen');
     });
 
     // ──────────────────────────────────────────────────────────
