@@ -12,6 +12,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
     
     <style>
         body {
@@ -307,15 +309,21 @@
     <!-- Footer -->
     <footer id="kontak" class="bg-dark text-light py-5 mt-5">
         <div class="container">
-            <div class="row g-4">
-                <div class="col-lg-6">
-                    <h5 class="fw-bold mb-3"><i class="fas fa-clipboard-check text-info me-2"></i>Sistem Absensi</h5>
+            <div class="row g-4 align-items-center">
+                <div class="col-lg-4">
+                    <h5 class="fw-bold mb-3 text-info"><i class="fas fa-university me-2"></i>Univ Tangsel Raya</h5>
                     <p class="text-white-50">Sistem informasi manajemen kehadiran mahasiswa terintegrasi untuk meningkatkan efisiensi dan transparansi kegiatan perkuliahan.</p>
                 </div>
-                <div class="col-lg-6 text-lg-end">
+                <div class="col-lg-4 text-lg-center">
                     <h5 class="fw-bold mb-3">Hubungi Kami</h5>
                     <p class="text-white-50 mb-1"><i class="fas fa-envelope me-2"></i> support@kampus.ac.id</p>
-                    <p class="text-white-50"><i class="fas fa-phone me-2"></i> +62 21-12345678</p>
+                    <p class="text-white-50 mb-3"><i class="fas fa-phone me-2"></i> +62 21-12345678</p>
+                </div>
+                <div class="col-lg-4 text-lg-end">
+                    <h5 class="fw-bold mb-3 text-start text-lg-end"><i class="fas fa-map-marked-alt me-2 text-info"></i>Lokasi Kampus</h5>
+                    <div class="d-flex justify-content-lg-end">
+                        <div id="public-map" class="border border-secondary rounded shadow-sm" style="width: 100%; max-width: 300px; height: 130px; z-index: 1;"></div>
+                    </div>
                 </div>
             </div>
             <hr class="border-secondary my-4">
@@ -327,5 +335,27 @@
 
     <!-- Bootstrap JS Bundle -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Leaflet JS & Welcome Map Initializer -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const publicMapEl = document.getElementById('public-map');
+            if (publicMapEl) {
+                const campusLat = {{ env('CAMPUS_LATITUDE', -6.175392) }};
+                const campusLng = {{ env('CAMPUS_LONGITUDE', 106.827153) }};
+                
+                const publicMap = L.map('public-map', {
+                    zoomControl: true,
+                    attributionControl: false
+                }).setView([campusLat, campusLng], 15);
+                
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(publicMap);
+                
+                L.marker([campusLat, campusLng]).addTo(publicMap)
+                    .bindPopup('<b>Kampus Utama Univ Tangsel Raya</b>')
+                    .openPopup();
+            }
+        });
+    </script>
 </body>
 </html>

@@ -91,20 +91,10 @@ class SelfAttendanceController extends Controller
             return redirect()->back()->with('error', 'Pertemuan hari ini belum dibuka oleh dosen.');
         }
 
-        // Validasi Geolocation jika status "hadir" dan tidak diperbolehkan absen darimana saja
-        if ($request->status === 'hadir' && !$schedule->absen_darimana_saja) {
-            if (!$request->latitude || !$request->longitude) {
-                return redirect()->back()->with('error', 'Akses lokasi diperlukan untuk absen hadir.');
-            }
-
-            $campusLat = env('CAMPUS_LATITUDE', -6.175392);
-            $campusLng = env('CAMPUS_LONGITUDE', 106.827153);
-            
-            $distance = $this->calculateDistance($request->latitude, $request->longitude, $campusLat, $campusLng);
-            
-            // Batas maksimal 200 meter
-            if ($distance > 200) {
-                return redirect()->back()->with('error', 'Lokasi Anda berada di luar radius kampus! Jarak Anda: ' . round($distance) . ' meter.');
+        // Validasi Geolocation dinonaktifkan atas permintaan user agar mahasiswa bisa absen dari mana saja tanpa kendala jarak.
+        if ($request->status === 'hadir') {
+            if ($request->latitude && $request->longitude) {
+                // Simpan lokasi jika tersedia (opsional)
             }
         }
 

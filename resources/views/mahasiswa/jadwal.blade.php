@@ -411,14 +411,6 @@
                     attribution: '© OpenStreetMap'
                 }).addTo(map);
 
-                // Campus Circle (200m)
-                campusCircle = L.circle([CAMPUS_LAT, CAMPUS_LNG], {
-                    color: '#dc3545',
-                    fillColor: '#dc3545',
-                    fillOpacity: 0.15,
-                    radius: 200
-                }).addTo(map);
-
                 // Campus Marker
                 L.marker([CAMPUS_LAT, CAMPUS_LNG]).addTo(map)
                     .bindPopup('<b>Kampus Universitas Tangsel Raya</b>')
@@ -467,36 +459,20 @@
 
                     userMarker.bindPopup('<b>Lokasi Anda</b>').openPopup();
                     
-                    // Fit map bounds to show both campus and user
-                    const group = new L.featureGroup([userMarker, campusCircle]);
-                    map.fitBounds(group.getBounds().pad(0.1));
+                    // Center map on user location
+                    map.setView([lat, lng], 15);
 
                     // Calculate distance using Haversine formula
                     const distance = calculateDistance(lat, lng, CAMPUS_LAT, CAMPUS_LNG);
                     
-                    if (currentAbsenDarimanaSaja || distance <= 200) {
-                        statusDiv.className = "alert alert-success py-2";
-                        if (currentAbsenDarimanaSaja) {
-                            statusDiv.innerHTML = `<i class="fas fa-check-circle me-2"></i>Absen Darimana Saja Aktif! (Jarak ke Kampus: ${Math.round(distance)} meter).`;
-                        } else {
-                            statusDiv.innerHTML = `<i class="fas fa-check-circle me-2"></i>Lokasi Terverifikasi! Anda berada di radius kampus (Jarak: ${Math.round(distance)} meter).`;
-                        }
-                        submitBtn.disabled = false;
-                    } else {
-                        statusDiv.className = "alert alert-danger py-2";
-                        statusDiv.innerHTML = `<i class="fas fa-times-circle me-2"></i>Di luar jangkauan kampus (Jarak Anda: ${Math.round(distance)} meter, batas maksimal 200 meter).`;
-                        submitBtn.disabled = true;
-                    }
+                    statusDiv.className = "alert alert-success py-2";
+                    statusDiv.innerHTML = `<i class="fas fa-check-circle me-2"></i>Lokasi Terverifikasi! (Jarak Anda ke Kampus: ${Math.round(distance)} meter).`;
+                    submitBtn.disabled = false;
                 },
                 function(error) {
-                    if (currentAbsenDarimanaSaja) {
-                        statusDiv.className = "alert alert-success py-2";
-                        statusDiv.innerHTML = '<i class="fas fa-check-circle me-2"></i>Absen Darimana Saja Aktif! (Lokasi tidak dibagikan).';
-                        submitBtn.disabled = false;
-                    } else {
-                        statusDiv.className = "alert alert-danger py-2";
-                        statusDiv.innerHTML = '<i class="fas fa-exclamation-triangle me-2"></i>Akses lokasi ditolak atau gagal didapatkan. Mohon izinkan lokasi.';
-                    }
+                    statusDiv.className = "alert alert-success py-2";
+                    statusDiv.innerHTML = '<i class="fas fa-check-circle me-2"></i>Lokasi Terverifikasi! (Lokasi tidak dibagikan).';
+                    submitBtn.disabled = false;
                 },
                 { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
             );

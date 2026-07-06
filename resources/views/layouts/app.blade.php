@@ -18,6 +18,8 @@
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
     <!-- SweetAlert2 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.min.css" rel="stylesheet">
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
 
     <style>
         body {
@@ -224,9 +226,30 @@
             </nav>
             @endauth
 
-            <main class="col-md-9 col-lg-10 main-content">
-                {{-- SWAL handles these server-side flashes now --}}
-                @yield('content')
+            <main class="col-md-9 col-lg-10 main-content d-flex flex-column" style="min-height: 85vh;">
+                <div class="flex-grow-1">
+                    @yield('content')
+                </div>
+                
+                <!-- Footer with Map Widget -->
+                <footer class="footer mt-5 py-4 bg-light border-top">
+                    <div class="container-fluid">
+                        <div class="row align-items-center">
+                            <div class="col-md-6 text-center text-md-start">
+                                <span class="text-muted">&copy; 2026 <strong>Univ Tangsel Raya</strong>. Sistem Absensi Mahasiswa Terintegrasi.</span>
+                            </div>
+                            <div class="col-md-6 mt-3 mt-md-0">
+                                <div class="d-flex align-items-center justify-content-center justify-content-md-end gap-3">
+                                    <div class="text-md-end text-center">
+                                        <small class="text-muted d-block">Alamat Kampus Utama</small>
+                                        <small class="fw-bold text-dark">Jl. Raya Puspiptek, Kota Tangerang Selatan</small>
+                                    </div>
+                                    <div id="footer-map" class="border rounded-3 shadow-sm" style="width: 140px; height: 80px; z-index: 1;"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </footer>
             </main>
         </div>
     </div>
@@ -374,6 +397,24 @@
                             }
                         });
                 }, 3000); // Poll every 3 seconds
+            }
+        });
+    </script>
+    <!-- Leaflet JS & Footer Map Initializer -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const footerMapEl = document.getElementById('footer-map');
+            if (footerMapEl) {
+                const footerMap = L.map('footer-map', {
+                    zoomControl: false,
+                    attributionControl: false
+                }).setView([{{ env('CAMPUS_LATITUDE', -6.175392) }}, {{ env('CAMPUS_LONGITUDE', 106.827153) }}], 14);
+                
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(footerMap);
+                
+                L.marker([{{ env('CAMPUS_LATITUDE', -6.175392) }}, {{ env('CAMPUS_LONGITUDE', 106.827153) }}]).addTo(footerMap)
+                    .bindPopup('<b>Univ Tangsel Raya</b>');
             }
         });
     </script>
