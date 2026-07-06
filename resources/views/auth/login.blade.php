@@ -130,7 +130,7 @@
     }
 </style>
 
-<div class="login-container">
+<div class="login-container d-flex flex-column flex-md-row gap-4 align-items-center justify-content-center">
     <div class="login-card">
         <!-- Error Alerts -->
         @if ($errors->any())
@@ -183,9 +183,57 @@
             <span class="text-muted small">Belum punya akun? <a href="{{ route('auth.register') }}" class="fw-bold" style="color: #8b5cf6; text-decoration: none;">Daftar di sini</a></span>
         </div>
     </div>
+
+    <!-- Quick Login Helper Card -->
+    <div class="card border-0 shadow-lg bg-white rounded-4 p-4 text-start align-self-stretch" style="max-width: 440px; width: 100%;">
+        <h6 class="fw-bold mb-3 text-dark"><i class="fas fa-key me-2 text-primary"></i>Akun Demo Uji Coba</h6>
+        <div class="row g-2">
+            <div class="col-6">
+                <button type="button" class="btn btn-sm btn-outline-primary w-100 py-2 text-truncate fw-semibold" onclick="fillDemo('admin@example.com', 'password')">
+                    Admin
+                </button>
+            </div>
+            <div class="col-6">
+                <button type="button" class="btn btn-sm btn-outline-success w-100 py-2 text-truncate fw-semibold" onclick="fillDemo('DSN001', 'password')">
+                    Dosen (DSN001)
+                </button>
+            </div>
+            <div class="col-6">
+                <button type="button" class="btn btn-sm btn-outline-info w-100 py-2 text-truncate fw-semibold" onclick="fillDemo('20240010001', 'password')">
+                    Mahasiswa (TI)
+                </button>
+            </div>
+            <div class="col-6">
+                <button type="button" class="btn btn-sm btn-outline-secondary w-100 py-2 text-truncate fw-semibold" onclick="fillDemo('DSN004', 'password')">
+                    Dosen (DSN004)
+                </button>
+            </div>
+        </div>
+        <small class="text-muted mt-3 d-block" style="font-size: 11px; line-height: 1.4;">
+            *Klik salah satu akun uji coba di atas untuk mengisi formulir login dan memecahkan hitungan Captcha secara otomatis.
+        </small>
+    </div>
 </div>
 
 <script>
+    function fillDemo(username, password) {
+        document.getElementById('username').value = username;
+        document.getElementById('password').value = password;
+        
+        // Find math expression like "Berapa hasil dari X + Y?" and solve it automatically
+        const captchaEl = document.querySelector('.captcha-box');
+        if (captchaEl) {
+            const matches = captchaEl.textContent.match(/(\d+)\s*\+\s*(\d+)/);
+            if (matches && matches.length >= 3) {
+                const answer = parseInt(matches[1]) + parseInt(matches[2]);
+                const answerInput = document.querySelector('input[name="captcha_answer"]');
+                if (answerInput) {
+                    answerInput.value = answer;
+                }
+            }
+        }
+    }
+
     document.addEventListener("DOMContentLoaded", function() {
         const passwordInput = document.getElementById('password');
         const toggleBtn = document.getElementById('btnTogglePassword');

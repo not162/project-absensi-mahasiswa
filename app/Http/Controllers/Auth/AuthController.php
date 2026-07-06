@@ -58,7 +58,9 @@ class AuthController extends Controller
      */
     public function showRegisterForm()
     {
-        return view('auth.register');
+        $departments = \App\Models\Department::orderBy('name')->get();
+        $classes = \App\Models\Kelas::with('department')->orderBy('semester')->orderBy('nomor_kelas')->get();
+        return view('auth.register', compact('departments', 'classes'));
     }
 
     /**
@@ -74,14 +76,18 @@ class AuthController extends Controller
             'email' => 'required|email|unique:users,email|ends_with:@gmail.com',
             'password' => 'required|min:6',
             'role' => 'required|in:user,dosen,admin',
-            'terms' => 'accepted'
+            'terms' => 'accepted',
+            'department_id' => 'required_if:role,user,dosen|nullable|exists:departments,id',
+            'class_id' => 'required_if:role,user|nullable|exists:classes,id',
         ];
         
         $messages = [
             'email.ends_with' => 'Email harus menggunakan domain @gmail.com pribadi.',
             'email.unique' => 'Email ini sudah terdaftar.',
             'role.in' => 'Peran yang dipilih tidak valid.',
-            'terms.accepted' => 'Anda harus menyetujui syarat dan ketentuan.'
+            'terms.accepted' => 'Anda harus menyetujui syarat dan ketentuan.',
+            'department_id.required_if' => 'Program Studi wajib dipilih.',
+            'class_id.required_if' => 'Kelas wajib dipilih.',
         ];
 
         // Conditional validation based on role
@@ -114,8 +120,8 @@ class AuthController extends Controller
             'email' => $validated['email'],
             'password' => \Illuminate\Support\Facades\Hash::make($validated['password']),
             'role' => $validated['role'],
-            'department_id' => null,
-            'class_id' => null,
+            'department_id' => in_array($validated['role'], ['user', 'dosen']) ? $request->department_id : null,
+            'class_id' => $validated['role'] === 'user' ? $request->class_id : null,
         ];
 
         if ($validated['role'] === 'user') {
@@ -125,6 +131,19 @@ class AuthController extends Controller
         }
 
         $user = \App\Models\User::create($userData);
+
+        // Auto-assign new lecturer to all courses in their department from semesters 1 to 8
+        if ($user->role === 'dosen' && $user->department_id) {
+            $courses = \App\Models\Course::where('department_id', $user->department_id)
+                ->whereBetween('semester', [1, 8])
+                ->get();
+            foreach ($courses as $course) {
+                \Illuminate\Support\Facades\DB::table('lecturer_courses')->updateOrInsert(
+                    ['user_id' => $user->id, 'course_id' => $course->id],
+                    ['created_at' => now(), 'updated_at' => now()]
+                );
+            }
+        }
 
         // 4. Update a global "latest registration" cache or just simulate polling update
         // We can just rely on the User model timestamps if we want to poll it, 

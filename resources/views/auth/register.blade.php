@@ -54,6 +54,40 @@
                             @enderror
                         </div>
 
+                        <!-- Program Studi Selection -->
+                        <div class="mb-3" id="departmentWrapper" style="display: none;">
+                            <label for="department_id" class="form-label">
+                                <i class="fas fa-university me-2 text-info"></i> Program Studi
+                            </label>
+                            <select name="department_id" id="department_id" class="form-select @error('department_id') is-invalid @enderror">
+                                <option value="" disabled selected>-- Pilih Program Studi --</option>
+                                @foreach($departments as $dept)
+                                    <option value="{{ $dept->id }}" {{ old('department_id') == $dept->id ? 'selected' : '' }}>{{ $dept->name }}</option>
+                                @endforeach
+                            </select>
+                            @error('department_id')
+                                <span class="invalid-feedback d-block">{{ $message }}</span>
+                            @enderror
+                        </div>
+
+                        <!-- Kelas Selection -->
+                        <div class="mb-3" id="classWrapper" style="display: none;">
+                            <label for="class_id" class="form-label">
+                                <i class="fas fa-graduation-cap me-2 text-info"></i> Pilih Kelas
+                            </label>
+                            <select name="class_id" id="class_id" class="form-select @error('class_id') is-invalid @enderror">
+                                <option value="" disabled selected>-- Pilih Kelas --</option>
+                                @foreach($classes as $cls)
+                                    <option value="{{ $cls->id }}" data-dept-id="{{ $cls->department_id }}" {{ old('class_id') == $cls->id ? 'selected' : '' }}>
+                                        {{ $cls->department->name }} - Semester {{ $cls->semester }} - Kelas {{ $cls->nomor_kelas }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            @error('class_id')
+                                <span class="invalid-feedback d-block">{{ $message }}</span>
+                            @enderror
+                        </div>
+
                         <!-- Dynamic Input Wrapper -->
                         <div class="mb-3" id="dynamicInputWrapper" style="display: none;">
                             <label for="identifier" id="dynamicLabel" class="form-label">
@@ -133,18 +167,49 @@
             eyeIcon.classList.toggle('fa-eye-slash');
         });
 
-        // --- 2. Dynamic Role Input ---
+        // --- 2. Dynamic Role Input & Fields ---
         const roleSelect = document.getElementById('role');
         const dynamicWrapper = document.getElementById('dynamicInputWrapper');
         const dynamicLabel = document.getElementById('labelText');
         const dynamicInput = document.getElementById('identifier');
         const dynamicHelp = document.getElementById('dynamicHelp');
+        
+        const deptSelect = document.getElementById('department_id');
+        const deptWrapper = document.getElementById('departmentWrapper');
+        const classSelect = document.getElementById('class_id');
+        const classWrapper = document.getElementById('classWrapper');
+
+        const classOptions = Array.from(classSelect.options);
+
+        function filterClasses() {
+            const selectedDept = deptSelect.value;
+            let firstMatch = true;
+            
+            classOptions.forEach(opt => {
+                if (opt.value === "") return;
+                const deptId = opt.getAttribute('data-dept-id');
+                if (deptId === selectedDept) {
+                    opt.style.display = '';
+                    if (firstMatch && classSelect.value === "") {
+                        // Optionally auto select or keep blank
+                    }
+                } else {
+                    opt.style.display = 'none';
+                }
+            });
+        }
+
+        deptSelect.addEventListener('change', filterClasses);
 
         function updateForm() {
             const role = roleSelect.value;
             if (!role) {
                 dynamicWrapper.style.display = 'none';
                 dynamicInput.removeAttribute('required');
+                deptWrapper.style.display = 'none';
+                deptSelect.removeAttribute('required');
+                classWrapper.style.display = 'none';
+                classSelect.removeAttribute('required');
                 return;
             }
 
@@ -155,21 +220,40 @@
                 dynamicLabel.innerText = "Nomor Induk Mahasiswa (NIM)";
                 dynamicInput.placeholder = "Masukkan NIM Anda";
                 dynamicHelp.innerText = "NIM digunakan sebagai identitas utama pencatatan absensi kuliah.";
+                
+                deptWrapper.style.display = 'block';
+                deptSelect.setAttribute('required', 'required');
+                classWrapper.style.display = 'block';
+                classSelect.setAttribute('required', 'required');
             } else if (role === 'dosen') {
                 dynamicLabel.innerText = "NIP Dosen (Nomor Induk Pegawai)";
                 dynamicInput.placeholder = "Masukkan NIP Anda";
                 dynamicHelp.innerText = "NIP digunakan untuk validasi jadwal mengajar.";
+                
+                deptWrapper.style.display = 'block';
+                deptSelect.setAttribute('required', 'required');
+                classWrapper.style.display = 'none';
+                classSelect.removeAttribute('required');
             } else if (role === 'admin') {
                 dynamicLabel.innerText = "Kode Registrasi Admin";
                 dynamicInput.placeholder = "Contoh: admin-2026-1234";
                 dynamicHelp.innerText = "Format kode registrasi: admin-2026-nomor (Contoh: admin-2026-123).";
+                
+                deptWrapper.style.display = 'none';
+                deptSelect.removeAttribute('required');
+                classWrapper.style.display = 'none';
+                classSelect.removeAttribute('required');
             }
+            filterClasses();
         }
 
         roleSelect.addEventListener('change', updateForm);
         
         // Trigger once on load in case of validation errors with old input
         updateForm();
+        if(deptSelect.value) {
+            filterClasses();
+        }
     });
 </script>
 @endpush

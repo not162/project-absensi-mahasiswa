@@ -226,9 +226,9 @@
                         </div>
                     </div>
                 @else
-                    <div class="alert alert-light border mb-3 py-2">
+                    <div class="alert alert-light border mb-3 py-2 text-center">
                         <i class="fas fa-info-circle me-1 text-muted"></i>
-                        <small>Pertemuan hari ini belum dibuka dosen. Absensi akan tersedia setelah dosen membuka pertemuan.</small>
+                        <small>Pertemuan hari ini belum aktif. Silakan tunggu jadwal mulai perkuliahan.</small>
                     </div>
                 @endif
             @endif

@@ -36,9 +36,22 @@ class SelfAttendanceController extends Controller
         $assignmentsByJadwal = [];
 
         foreach ($schedules as $schedule) {
-            $meeting = ClassMeeting::where('schedule_id', $schedule->id)
-                ->whereDate('tanggal', $today)
-                ->first();
+            $isHariIni = ($hariIni === $schedule->hari);
+            
+            if ($isHariIni) {
+                $meeting = ClassMeeting::firstOrCreate(
+                    ['schedule_id' => $schedule->id, 'tanggal' => $today],
+                    [
+                        'lecturer_id'   => $schedule->user_id,
+                        'pertemuan_ke'  => ClassMeeting::where('schedule_id', $schedule->id)->count() + 1,
+                        'materi'        => '',
+                    ]
+                );
+            } else {
+                $meeting = ClassMeeting::where('schedule_id', $schedule->id)
+                    ->whereDate('tanggal', $today)
+                    ->first();
+            }
 
             $meetingData[$schedule->id] = $meeting;
 
@@ -82,14 +95,15 @@ class SelfAttendanceController extends Controller
         // Pastikan mahasiswa ada di kelas jadwal ini
         abort_if($schedule->class_id !== $user->class_id, 403);
 
-        // Cari pertemuan hari ini (harus sudah dibuka oleh dosen)
-        $meeting = ClassMeeting::where('schedule_id', $schedule->id)
-            ->whereDate('tanggal', $today)
-            ->first();
-
-        if (!$meeting) {
-            return redirect()->back()->with('error', 'Pertemuan hari ini belum dibuka oleh dosen.');
-        }
+        // Cari atau buat pertemuan hari ini secara otomatis
+        $meeting = ClassMeeting::firstOrCreate(
+            ['schedule_id' => $schedule->id, 'tanggal' => $today],
+            [
+                'lecturer_id'   => $schedule->user_id,
+                'pertemuan_ke'  => ClassMeeting::where('schedule_id', $schedule->id)->count() + 1,
+                'materi'        => '',
+            ]
+        );
 
         // Validasi Geolocation dinonaktifkan atas permintaan user agar mahasiswa bisa absen dari mana saja tanpa kendala jarak.
         if ($request->status === 'hadir') {
