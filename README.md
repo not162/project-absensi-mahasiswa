@@ -26,6 +26,10 @@ Sistem informasi akademik berbasis web full-stack yang dirancang untuk memfasili
 | 13 | **Dashboard Analytics (Chart.js)** | Visualisasi grafik doughnut interaktif mengenai komposisi kehadiran di Dashboard Dosen |
 | 14 | **Cetak KHS PDF** | Ekspor Kartu Hasil Studi (KHS) resmi berformat PDF dengan kop surat universitas |
 | 15 | **CRUD Foto Profil Peran** | Manajemen (upload, preview, delete) foto profil secara andal untuk Admin, Dosen, dan Mahasiswa |
+| 16 | **Pencarian Semantik Matakuliah (RAG & AI)** | Pencarian mata kuliah menggunakan pemanggilan API Groq Llama-3.3 secara semantik (dengan fallback lokal TF-IDF Cosine Similarity) dan rekomendasi mata kuliah pintar berbasis prodi/semester mahasiswa |
+| 17 | **MyUniv AI Advisor (Chatbot Akademik)** | Chatbot bimbingan akademik terintegrasi RAG data nilai, jadwal, dan kehadiran real-time mahasiswa dengan guardrails anti-halusinasi dan real-time timestamping |
+| 18 | **STARS Algorithm & Decision Engine** | Sistem penilaian 1-5 bintang serta keputusan sistem rekomendasi bimbingan akademik langsung berdasarkan keaktifan absensi, tugas, dan nilai mahasiswa |
+| 19 | **Heatmap Kehadiran & AI Context Trainer** | Dosen dapat melatih/mengarahkan asisten AI mahasiswa via form Context Trainer serta memantau keaktifan kelas secara visual dengan gradasi warna di 16 pertemuan |
 
 ---
 
