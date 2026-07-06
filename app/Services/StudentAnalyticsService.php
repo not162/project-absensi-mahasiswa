@@ -8,6 +8,7 @@ use App\Models\ClassMeeting;
 use App\Models\Assignment;
 use App\Models\Grade;
 use App\Models\CourseRepeat;
+use App\Models\Schedule;
 
 class StudentAnalyticsService
 {
@@ -21,8 +22,8 @@ class StudentAnalyticsService
         $totalMeetingsCount = 0;
         $attendedMeetingsCount = 0;
         
-        if ($student->kelas) {
-            $scheduleIds = $student->kelas->schedules->pluck('id');
+        if ($student->class_id) {
+            $scheduleIds = Schedule::where('class_id', $student->class_id)->pluck('id');
             $meetings = ClassMeeting::whereIn('schedule_id', $scheduleIds)->get();
             $totalMeetingsCount = $meetings->count();
             
@@ -41,8 +42,8 @@ class StudentAnalyticsService
         $totalAssignmentsCount = 0;
         $submittedCount = 0;
         
-        if ($student->kelas) {
-            $scheduleIds = $student->kelas->schedules->pluck('id');
+        if ($student->class_id) {
+            $scheduleIds = Schedule::where('class_id', $student->class_id)->pluck('id');
             $meetingIds = ClassMeeting::whereIn('schedule_id', $scheduleIds)->pluck('id');
             $assignments = Assignment::whereIn('meeting_id', $meetingIds)->get();
             $totalAssignmentsCount = $assignments->count();

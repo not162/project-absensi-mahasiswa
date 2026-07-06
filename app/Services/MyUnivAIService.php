@@ -98,8 +98,9 @@ PROMPT;
 
         // Get schedules/courses
         $coursesText = "";
-        if ($student->kelas && $student->kelas->schedules) {
-            foreach ($student->kelas->schedules as $s) {
+        if ($student->class_id) {
+            $schedules = \App\Models\Schedule::with(['course', 'lecturer'])->where('class_id', $student->class_id)->get();
+            foreach ($schedules as $s) {
                 $coursesText .= "- " . ($s->course->nama_matkul ?? '-') . " (SKS: " . ($s->course->sks ?? '-') . ", Dosen: " . ($s->lecturer->name ?? '-') . ")\n";
             }
         } else {
