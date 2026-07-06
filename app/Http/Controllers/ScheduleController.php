@@ -12,10 +12,17 @@ class ScheduleController extends Controller
     /** Semua jadwal (admin) — dikelompokkan per prodi, semester, kelas */
     public function index()
     {
-        $schedules = Schedule::with(['course.department', 'lecturer', 'kelas.department'])
+        $user = auth()->user();
+        
+        $query = Schedule::with(['course.department', 'lecturer', 'kelas.department'])
             ->join('classes', 'schedules.class_id', '=', 'classes.id')
-            ->join('departments', 'classes.department_id', '=', 'departments.id')
-            ->orderBy('departments.name')
+            ->join('departments', 'classes.department_id', '=', 'departments.id');
+
+        if ($user->role === 'dosen') {
+            $query->where('schedules.user_id', $user->id);
+        }
+
+        $schedules = $query->orderBy('departments.name')
             ->orderBy('classes.semester')
             ->orderBy('classes.nomor_kelas')
             ->orderByRaw("FIELD(schedules.hari,'Senin','Selasa','Rabu','Kamis','Jumat','Sabtu')")
@@ -62,6 +69,7 @@ class ScheduleController extends Controller
     /** Form tambah jadwal */
     public function create()
     {
+        abort_if(auth()->user()->role !== 'admin', 403);
         $courses  = Course::with('department')->get();
         $dosens   = User::where('role', 'dosen')->get();
         $classes  = \App\Models\Kelas::orderBy('semester')->orderBy('nomor_kelas')->get();
@@ -71,6 +79,7 @@ class ScheduleController extends Controller
     /** Simpan jadwal baru */
     public function store(Request $request)
     {
+        abort_if(auth()->user()->role !== 'admin', 403);
         $request->validate([
             'course_id'        => 'required|exists:courses,id',
             'user_id'          => 'required|exists:users,id',
@@ -99,6 +108,7 @@ class ScheduleController extends Controller
     /** Form edit jadwal */
     public function edit(Schedule $schedule)
     {
+        abort_if(auth()->user()->role !== 'admin', 403);
         $courses = Course::with('department')->get();
         $dosens  = User::where('role', 'dosen')->get();
         $classes = \App\Models\Kelas::orderBy('semester')->orderBy('nomor_kelas')->get();
@@ -108,6 +118,7 @@ class ScheduleController extends Controller
     /** Update jadwal */
     public function update(Request $request, Schedule $schedule)
     {
+        abort_if(auth()->user()->role !== 'admin', 403);
         $request->validate([
             'course_id'        => 'required|exists:courses,id',
             'user_id'          => 'required|exists:users,id',
@@ -136,6 +147,7 @@ class ScheduleController extends Controller
     /** Hapus jadwal */
     public function destroy(Schedule $schedule)
     {
+        abort_if(auth()->user()->role !== 'admin', 403);
         $schedule->delete();
         return redirect()->route('schedules.index')
                          ->with('success', 'Jadwal berhasil dihapus.');

@@ -4,9 +4,11 @@
 <div class="container-fluid py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2 class="fw-bold"><i class="fas fa-calendar-alt text-primary me-2"></i>Jadwal Mengajar</h2>
+        @if(auth()->user()->role === 'admin')
         <a href="{{ route('schedules.create') }}" class="btn btn-primary">
             <i class="fas fa-plus me-1"></i> Tambah Jadwal
         </a>
+        @endif
     </div>
 
     @if(session('success'))
@@ -50,7 +52,9 @@
                                     <th>Mode</th>
                                     <th>Ruangan / Link</th>
                                     <th>Tahun Ajaran</th>
+                                    @if(auth()->user()->role === 'admin')
                                     <th>Aksi</th>
+                                    @endif
                                 </tr>
                             </thead>
                             <tbody>
@@ -69,6 +73,7 @@
                                     </td>
                                     <td>{{ $schedule->lokasi }}</td>
                                     <td>{{ $schedule->tahun_ajaran }}</td>
+                                    @if(auth()->user()->role === 'admin')
                                     <td class="text-nowrap">
                                         <a href="{{ route('schedules.edit', $schedule) }}" class="btn btn-sm btn-warning">
                                             <i class="fas fa-edit"></i>
@@ -79,6 +84,7 @@
                                             <button class="btn btn-sm btn-danger"><i class="fas fa-trash"></i></button>
                                         </form>
                                     </td>
+                                    @endif
                                 </tr>
                                 @endforeach
                             </tbody>

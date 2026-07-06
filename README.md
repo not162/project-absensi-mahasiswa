@@ -98,6 +98,36 @@ Sistem memvalidasi setiap *request* menggunakan *Middleware* kustom:
 3. Saat *request* ke *Route* terproteksi (misal: `/dosen/dashboard`), `RoleMiddleware` membaca profil *User*.
 4. Jika `role` tidak sesuai dengan rute yang diminta, lemparkan `HTTP 403 UNAUTHORIZED`.
 
+## 🔑 Akun Pengujian Default (Default Test Accounts)
+
+Untuk mempermudah pengujian seluruh fitur (Admin, Dosen, Mahasiswa), Anda dapat menggunakan akun bawaan berikut. Password default untuk seluruh akun adalah `password`.
+
+### 1. Akun Administrator & Mahasiswa Demo
+| Peran (Role) | Username / Email / NIM | Password | Keterangan |
+| --- | --- | --- | --- |
+| **Admin** | `admin@example.com` | `password` | Mengelola kelas, jadwal, prodi, dan data user |
+| **Mahasiswa** | `20240010001` (NIM) | `password` | Mahasiswa prodi Teknik Informatika |
+| **Mahasiswa** | `20240020001` (NIM) | `password` | Mahasiswa prodi Sistem Informasi |
+
+### 2. Akun Dosen Pengajar Default
+| Kode Dosen (NIP) | Nama Dosen | Program Studi (Prodi) | Email | Password |
+| --- | --- | --- | --- | --- |
+| `DSN001` | Eko Rahayu, M.T | Teknik Informatika | `dosen001@kampus.ac.id` | `password` |
+| `DSN002` | Eko Wijaya, M.Kom | Teknik Informatika | `dosen002@kampus.ac.id` | `password` |
+| `DSN003` | Lestari Susilo, Ph.D | Teknik Informatika | `dosen003@kampus.ac.id` | `password` |
+| `DSN004` | Joko Susilo, M.Kom | Sistem Informasi | `dosen004@kampus.ac.id` | `password` |
+| `DSN005` | Irfan Rahayu, M.Ak | Sistem Informasi | `dosen005@kampus.ac.id` | `password` |
+| `DSN006` | Gunawan Rahayu, M.Pd | Sistem Informasi | `dosen006@kampus.ac.id` | `password` |
+| `DSN007` | Eko Handayani, M.Ak | Teknik Mesin | `dosen007@kampus.ac.id` | `password` |
+| `DSN008` | Fitri Utami, M.Si | Teknik Mesin | `dosen008@kampus.ac.id` | `password` |
+| `DSN009` | Lestari Utami, M.T | Teknik Mesin | `dosen009@kampus.ac.id` | `password` |
+| `DSN010` | Joko Lestari, M.Ak | Administrasi Bisnis | `dosen010@kampus.ac.id` | `password` |
+| `DSN011` | Joko Hadi, M.Si | Administrasi Bisnis | `dosen011@kampus.ac.id` | `password` |
+| `DSN012` | Nanda Susilo, Ph.D | Administrasi Bisnis | `dosen012@kampus.ac.id` | `password` |
+| `DSN013` | Kartika Handayani, M.Pd | Akuntansi | `dosen013@kampus.ac.id` | `password` |
+| `DSN014` | Eko Prasetyo, M.Kom | Akuntansi | `dosen014@kampus.ac.id` | `password` |
+| `DSN015` | Siti Permana, M.Kom | Akuntansi | `dosen015@kampus.ac.id` | `password` |
+
 ---
 
 ## 💻 Instalasi dan Konfigurasi
