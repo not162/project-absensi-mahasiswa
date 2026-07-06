@@ -70,6 +70,20 @@
                             @enderror
                         </div>
 
+                        <!-- Semester Selection -->
+                        <div class="mb-3" id="semesterWrapper" style="display: none;">
+                            <label for="semester_select" class="form-label">
+                                <i class="fas fa-layer-group me-2 text-success"></i> Pilih Semester
+                            </label>
+                            <select id="semester_select" class="form-select">
+                                <option value="" disabled selected>-- Pilih Semester --</option>
+                                @for($i = 1; $i <= 8; $i++)
+                                    <option value="{{ $i }}">Semester {{ $i }}</option>
+                                @endfor
+                            </select>
+                            <small class="form-text text-muted">Pilih semester aktif perkuliahan Anda saat ini.</small>
+                        </div>
+
                         <!-- Kelas Selection -->
                         <div class="mb-3" id="classWrapper" style="display: none;">
                             <label for="class_id" class="form-label">
@@ -78,7 +92,7 @@
                             <select name="class_id" id="class_id" class="form-select @error('class_id') is-invalid @enderror">
                                 <option value="" disabled selected>-- Pilih Kelas --</option>
                                 @foreach($classes as $cls)
-                                    <option value="{{ $cls->id }}" data-dept-id="{{ $cls->department_id }}" {{ old('class_id') == $cls->id ? 'selected' : '' }}>
+                                    <option value="{{ $cls->id }}" data-dept-id="{{ $cls->department_id }}" data-semester="{{ $cls->semester }}" {{ old('class_id') == $cls->id ? 'selected' : '' }}>
                                         {{ $cls->department->name }} - Semester {{ $cls->semester }} - Kelas {{ $cls->nomor_kelas }}
                                     </option>
                                 @endforeach
@@ -86,6 +100,28 @@
                             @error('class_id')
                                 <span class="invalid-feedback d-block">{{ $message }}</span>
                             @enderror
+                        </div>
+
+                        <!-- Mode Perkuliahan Info -->
+                        <div class="mb-3" id="modeInfoWrapper" style="display: none;">
+                            <label class="form-label">
+                                <i class="fas fa-chalkboard-teacher me-2 text-warning"></i> Mode Perkuliahan
+                            </label>
+                            <div class="d-flex gap-2">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="mode_perkuliahan" id="modeLuring" value="offline" checked>
+                                    <label class="form-check-label" for="modeLuring">
+                                        <i class="fas fa-building me-1"></i> Luring (Tatap Muka)
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="mode_perkuliahan" id="modeDaring" value="online">
+                                    <label class="form-check-label" for="modeDaring">
+                                        <i class="fas fa-laptop me-1"></i> Daring (Online)
+                                    </label>
+                                </div>
+                            </div>
+                            <small class="form-text text-muted">Pilih mode perkuliahan sesuai informasi dari program studi Anda.</small>
                         </div>
 
                         <!-- Dynamic Input Wrapper -->
@@ -176,30 +212,45 @@
         
         const deptSelect = document.getElementById('department_id');
         const deptWrapper = document.getElementById('departmentWrapper');
+        const semesterSelect = document.getElementById('semester_select');
+        const semesterWrapper = document.getElementById('semesterWrapper');
         const classSelect = document.getElementById('class_id');
         const classWrapper = document.getElementById('classWrapper');
+        const modeInfoWrapper = document.getElementById('modeInfoWrapper');
 
         const classOptions = Array.from(classSelect.options);
 
         function filterClasses() {
             const selectedDept = deptSelect.value;
-            let firstMatch = true;
-            
+            const selectedSemester = semesterSelect.value;
+
+            classSelect.value = '';
             classOptions.forEach(opt => {
                 if (opt.value === "") return;
                 const deptId = opt.getAttribute('data-dept-id');
-                if (deptId === selectedDept) {
-                    opt.style.display = '';
-                    if (firstMatch && classSelect.value === "") {
-                        // Optionally auto select or keep blank
-                    }
-                } else {
-                    opt.style.display = 'none';
-                }
+                const semester = opt.getAttribute('data-semester');
+                const matchDept = !selectedDept || deptId === selectedDept;
+                const matchSem = !selectedSemester || semester === selectedSemester;
+                opt.style.display = (matchDept && matchSem) ? '' : 'none';
             });
         }
 
-        deptSelect.addEventListener('change', filterClasses);
+        deptSelect.addEventListener('change', function() {
+            semesterSelect.value = '';
+            classSelect.value = '';
+            if (roleSelect.value === 'user') {
+                semesterWrapper.style.display = 'block';
+                classWrapper.style.display = 'none';
+            }
+            filterClasses();
+        });
+
+        semesterSelect.addEventListener('change', function() {
+            filterClasses();
+            if (roleSelect.value === 'user') {
+                classWrapper.style.display = 'block';
+            }
+        });
 
         function updateForm() {
             const role = roleSelect.value;
@@ -208,8 +259,10 @@
                 dynamicInput.removeAttribute('required');
                 deptWrapper.style.display = 'none';
                 deptSelect.removeAttribute('required');
+                semesterWrapper.style.display = 'none';
                 classWrapper.style.display = 'none';
                 classSelect.removeAttribute('required');
+                modeInfoWrapper.style.display = 'none';
                 return;
             }
 
@@ -223,8 +276,10 @@
                 
                 deptWrapper.style.display = 'block';
                 deptSelect.setAttribute('required', 'required');
-                classWrapper.style.display = 'block';
+                semesterWrapper.style.display = deptSelect.value ? 'block' : 'none';
+                classWrapper.style.display = (deptSelect.value && semesterSelect.value) ? 'block' : 'none';
                 classSelect.setAttribute('required', 'required');
+                modeInfoWrapper.style.display = 'block';
             } else if (role === 'dosen') {
                 dynamicLabel.innerText = "NIP Dosen (Nomor Induk Pegawai)";
                 dynamicInput.placeholder = "Contoh: DSN-2026-001 atau DSN001";
@@ -232,8 +287,10 @@
                 
                 deptWrapper.style.display = 'block';
                 deptSelect.setAttribute('required', 'required');
+                semesterWrapper.style.display = 'none';
                 classWrapper.style.display = 'none';
                 classSelect.removeAttribute('required');
+                modeInfoWrapper.style.display = 'none';
             } else if (role === 'admin') {
                 dynamicLabel.innerText = "Kode Registrasi Admin";
                 dynamicInput.placeholder = "Contoh: admin-2026-1234";
@@ -241,8 +298,10 @@
                 
                 deptWrapper.style.display = 'none';
                 deptSelect.removeAttribute('required');
+                semesterWrapper.style.display = 'none';
                 classWrapper.style.display = 'none';
                 classSelect.removeAttribute('required');
+                modeInfoWrapper.style.display = 'none';
             }
             filterClasses();
         }

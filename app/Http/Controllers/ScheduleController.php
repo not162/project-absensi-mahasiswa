@@ -108,17 +108,51 @@ class ScheduleController extends Controller
     /** Form edit jadwal */
     public function edit(Schedule $schedule)
     {
-        abort_if(auth()->user()->role !== 'admin', 403);
+        $user = auth()->user();
+        
+        // Dosen can only edit their own schedules
+        if ($user->role === 'dosen') {
+            abort_if($schedule->user_id !== $user->id, 403, 'Anda hanya dapat mengedit jadwal milik Anda sendiri.');
+        } else {
+            abort_if($user->role !== 'admin', 403);
+        }
+
         $courses = Course::with('department')->get();
         $dosens  = User::where('role', 'dosen')->get();
         $classes = \App\Models\Kelas::orderBy('semester')->orderBy('nomor_kelas')->get();
-        return view('admin.jadwal.edit', compact('schedule', 'courses', 'dosens', 'classes'));
+        $isDosen = $user->role === 'dosen';
+        return view('admin.jadwal.edit', compact('schedule', 'courses', 'dosens', 'classes', 'isDosen'));
     }
 
     /** Update jadwal */
     public function update(Request $request, Schedule $schedule)
     {
-        abort_if(auth()->user()->role !== 'admin', 403);
+        $user = auth()->user();
+
+        if ($user->role === 'dosen') {
+            abort_if($schedule->user_id !== $user->id, 403, 'Anda hanya dapat mengubah jadwal milik Anda sendiri.');
+
+            // Dosen hanya bisa mengubah: hari, jam, mode, ruangan/link
+            $request->validate([
+                'hari'             => 'required|in:Senin,Selasa,Rabu,Kamis,Jumat,Sabtu',
+                'jam_mulai'        => 'required',
+                'jam_selesai'      => 'required|after:jam_mulai',
+                'mode'             => 'required|in:offline,online',
+                'ruangan'          => 'required_if:mode,offline|nullable|string|max:50',
+                'link_online'      => 'required_if:mode,online|nullable|url',
+                'kode_online'      => 'nullable|string|max:100',
+            ]);
+
+            $schedule->update($request->only([
+                'hari', 'jam_mulai', 'jam_selesai', 'mode', 'ruangan', 'link_online', 'kode_online'
+            ]));
+
+            return redirect()->route('schedules.byDosen', $user)
+                             ->with('success', 'Jadwal berhasil diperbarui.');
+        }
+
+        // Admin: full update
+        abort_if($user->role !== 'admin', 403);
         $request->validate([
             'course_id'        => 'required|exists:courses,id',
             'user_id'          => 'required|exists:users,id',

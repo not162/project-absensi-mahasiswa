@@ -54,6 +54,8 @@
                                     <th>Tahun Ajaran</th>
                                     @if(auth()->user()->role === 'admin')
                                     <th>Aksi</th>
+                                    @elseif(auth()->user()->role === 'dosen' && $schedule->user_id === auth()->id())
+                                    <th>Ubah</th>
                                     @endif
                                 </tr>
                             </thead>
@@ -83,6 +85,12 @@
                                             @csrf @method('DELETE')
                                             <button class="btn btn-sm btn-danger"><i class="fas fa-trash"></i></button>
                                         </form>
+                                    </td>
+                                    @elseif(auth()->user()->role === 'dosen' && $schedule->user_id === auth()->id())
+                                    <td class="text-nowrap">
+                                        <a href="{{ route('schedules.edit', $schedule) }}" class="btn btn-sm btn-warning">
+                                            <i class="fas fa-edit me-1"></i> Ubah
+                                        </a>
                                     </td>
                                     @endif
                                 </tr>

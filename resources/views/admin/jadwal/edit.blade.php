@@ -3,10 +3,17 @@
 @section('content')
 <div class="container py-4" style="max-width:700px">
     <div class="d-flex align-items-center mb-4 gap-2">
-        <a href="{{ route('schedules.index') }}" class="btn btn-sm btn-outline-secondary">
-            <i class="fas fa-arrow-left"></i>
-        </a>
-        <h2 class="mb-0 fw-bold">Edit Jadwal Mengajar</h2>
+        @if(isset($isDosen) && $isDosen)
+            <a href="{{ route('schedules.byDosen', auth()->user()) }}" class="btn btn-sm btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i>
+            </a>
+            <h2 class="mb-0 fw-bold">Ubah Jadwal Mengajar</h2>
+        @else
+            <a href="{{ route('schedules.index') }}" class="btn btn-sm btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i>
+            </a>
+            <h2 class="mb-0 fw-bold">Edit Jadwal Mengajar</h2>
+        @endif
     </div>
 
     <div class="card shadow-sm">
@@ -21,6 +28,8 @@
                 @csrf
                 @method('PUT')
                 <div class="row g-3">
+                    {{-- Admin-only fields: Mata Kuliah, Dosen, Kelas --}}
+                    @if(!isset($isDosen) || !$isDosen)
                     <div class="col-md-6">
                         <label class="form-label fw-semibold">Mata Kuliah <span class="text-danger">*</span></label>
                         <select name="course_id" class="form-select" required>
@@ -50,6 +59,33 @@
                             @endforeach
                         </select>
                     </div>
+                    @else
+                    {{-- Dosen sees read-only info about their course & class --}}
+                    <div class="col-12">
+                        <div class="alert alert-info mb-0">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <small class="text-muted">Mata Kuliah</small>
+                                    <div class="fw-bold">{{ $schedule->course->kode_matkul ?? '-' }} — {{ $schedule->course->nama_matkul ?? '-' }}</div>
+                                </div>
+                                <div class="col-md-4">
+                                    <small class="text-muted">Kelas</small>
+                                    <div class="fw-bold">{{ $schedule->kelas->department->name ?? '-' }} — Kelas {{ $schedule->kelas->nomor_kelas ?? '-' }} (Sem. {{ $schedule->kelas->semester ?? '-' }})</div>
+                                </div>
+                                <div class="col-md-4">
+                                    <small class="text-muted">Tahun Ajaran</small>
+                                    <div class="fw-bold">{{ $schedule->tahun_ajaran }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <hr class="my-0">
+                        <small class="text-muted"><i class="fas fa-info-circle me-1"></i>Anda dapat mengubah hari, jam, mode perkuliahan, dan lokasi/link. Untuk mengubah mata kuliah atau kelas, hubungi Admin.</small>
+                    </div>
+                    @endif
+
+                    {{-- Common editable fields for both Admin & Dosen --}}
                     <div class="col-md-4">
                         <label class="form-label fw-semibold">Hari <span class="text-danger">*</span></label>
                         <select name="hari" class="form-select" required>
@@ -69,22 +105,25 @@
                     <div class="col-md-4">
                         <label class="form-label fw-semibold">Mode <span class="text-danger">*</span></label>
                         <select name="mode" id="modeSelect" class="form-select" required onchange="toggleMode()">
-                            <option value="offline" @selected($schedule->mode=='offline')>Offline</option>
-                            <option value="online" @selected($schedule->mode=='online')>Online</option>
+                            <option value="offline" @selected($schedule->mode=='offline')>Offline (Luring)</option>
+                            <option value="online" @selected($schedule->mode=='online')>Online (Daring)</option>
                         </select>
                     </div>
                     <div class="col-md-8" id="ruanganField">
                         <label class="form-label fw-semibold">Ruangan</label>
-                        <input type="text" name="ruangan" class="form-control" value="{{ $schedule->ruangan }}">
+                        <input type="text" name="ruangan" class="form-control" value="{{ $schedule->ruangan }}" placeholder="Contoh: R.301, Lab Komputer 2">
                     </div>
                     <div class="col-md-6" id="linkField" style="display:none">
                         <label class="form-label fw-semibold">Link Online</label>
-                        <input type="url" name="link_online" class="form-control" value="{{ $schedule->link_online }}">
+                        <input type="url" name="link_online" class="form-control" value="{{ $schedule->link_online }}" placeholder="https://meet.google.com/...">
                     </div>
                     <div class="col-md-6" id="kodeField" style="display:none">
                         <label class="form-label fw-semibold">Kode Online</label>
-                        <input type="text" name="kode_online" class="form-control" value="{{ $schedule->kode_online }}">
+                        <input type="text" name="kode_online" class="form-control" value="{{ $schedule->kode_online }}" placeholder="Kode meeting / password">
                     </div>
+
+                    {{-- Admin-only fields: Tahun Ajaran & Replacement --}}
+                    @if(!isset($isDosen) || !$isDosen)
                     <div class="col-md-4">
                         <label class="form-label fw-semibold">Tahun Ajaran <span class="text-danger">*</span></label>
                         <select name="tahun_ajaran" class="form-select" required>
@@ -106,14 +145,19 @@
                         <label class="form-label fw-semibold">Tanggal Kelas Pengganti <span class="text-danger">*</span></label>
                         <input type="date" name="replacement_date" id="replacement_date" class="form-control" value="{{ $schedule->replacement_date }}">
                     </div>
+                    @endif
                 </div>
 
                 <hr class="my-4">
                 <div class="d-flex gap-2">
                     <button type="submit" class="btn btn-primary px-4">
-                        <i class="fas fa-save me-1"></i> Update
+                        <i class="fas fa-save me-1"></i> {{ (isset($isDosen) && $isDosen) ? 'Simpan Perubahan' : 'Update' }}
                     </button>
-                    <a href="{{ route('schedules.index') }}" class="btn btn-outline-secondary">Batal</a>
+                    @if(isset($isDosen) && $isDosen)
+                        <a href="{{ route('schedules.byDosen', auth()->user()) }}" class="btn btn-outline-secondary">Batal</a>
+                    @else
+                        <a href="{{ route('schedules.index') }}" class="btn btn-outline-secondary">Batal</a>
+                    @endif
                 </div>
             </form>
         </div>
@@ -128,15 +172,19 @@ function toggleMode() {
     document.getElementById('kodeField').style.display = mode === 'online' ? '' : 'none';
 }
 function toggleReplacementDate() {
-    const isChecked = document.getElementById('isReplacementCheckbox').checked;
+    const checkbox = document.getElementById('isReplacementCheckbox');
+    if (!checkbox) return;
+    const isChecked = checkbox.checked;
     const field = document.getElementById('replacementDateField');
     const input = document.getElementById('replacement_date');
-    field.style.display = isChecked ? 'block' : 'none';
-    if (isChecked) {
-        input.setAttribute('required', 'required');
-    } else {
-        input.removeAttribute('required');
-        input.value = '';
+    if (field) field.style.display = isChecked ? 'block' : 'none';
+    if (input) {
+        if (isChecked) {
+            input.setAttribute('required', 'required');
+        } else {
+            input.removeAttribute('required');
+            input.value = '';
+        }
     }
 }
 document.addEventListener('DOMContentLoaded', function() {

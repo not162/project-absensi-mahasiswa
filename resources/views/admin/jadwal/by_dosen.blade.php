@@ -27,6 +27,7 @@
                         <th>Kelas</th>
                         <th>Ruangan</th>
                         <th>Mahasiswa</th>
+                        <th>Ubah Jadwal</th>
                         <th>Absensi</th>
                     </tr>
                 </thead>
@@ -54,6 +55,15 @@
                         </td>
                         <td>
                             @if(auth()->user()->id === $dosen->id)
+                                <a href="{{ route('schedules.edit', $schedule) }}" class="btn btn-sm btn-warning">
+                                    <i class="fas fa-edit me-1"></i> Ubah
+                                </a>
+                            @else
+                                <span class="text-muted">-</span>
+                            @endif
+                        </td>
+                        <td>
+                            @if(auth()->user()->id === $dosen->id)
                                 @if($schedule->hari === $hariIni)
                                     @if($meetingsDone->contains($schedule->id))
                                         <a href="{{ route('absensi.start', $schedule) }}" class="btn btn-sm btn-success">
@@ -78,7 +88,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="9" class="text-center py-5 text-muted">
+                        <td colspan="10" class="text-center py-5 text-muted">
                             <i class="fas fa-calendar-times fa-2x mb-2 d-block"></i>
                             Belum ada jadwal mengajar.
                         </td>
