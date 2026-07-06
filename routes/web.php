@@ -176,7 +176,6 @@ Route::middleware('auth')->group(function () {
         Route::get('/schedules/mahasiswa', [ScheduleController::class, 'mahasiswaJadwal'])->name('schedules.mahasiswa');
         Route::get('/jadwal-kuliah', [SelfAttendanceController::class, 'index'])->name('mahasiswa.jadwal');
         Route::post('/self-checkin', [SelfAttendanceController::class, 'checkIn'])->name('mahasiswa.checkin');
-        Route::get('/self-checkin/qr', [SelfAttendanceController::class, 'qrCheckIn'])->name('mahasiswa.qrCheckin');
         
         Route::get('/my-grades', [GradeController::class, 'myGrades'])->name('grades.my');
         

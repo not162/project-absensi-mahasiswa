@@ -70,7 +70,7 @@
                         @if($myStatus)
                             <span class="badge bg-success py-2 px-3 w-100 text-uppercase"><i class="fas fa-check-circle me-1"></i> Sudah Absen</span>
                         @else
-                            <button type="button" onclick="openCheckinModal({{ $schedule->id }}, {{ $schedule->absen_darimana_saja ? 'true' : 'false' }})" class="btn btn-success fw-bold text-white px-3 py-2 w-100 shadow-sm">
+                            <button type="button" onclick="openCheckinModal({{ $schedule->id }})" class="btn btn-success fw-bold text-white px-3 py-2 w-100 shadow-sm">
                                 <i class="fas fa-sign-in-alt me-1"></i> Absen Masuk
                             </button>
                         @endif
@@ -199,7 +199,7 @@
                                         @csrf
                                         <input type="hidden" name="schedule_id" value="{{ $schedule->id }}">
                                         <input type="hidden" name="status" class="status-input" value="hadir">
-                                        <button type="button" onclick="openCheckinModal({{ $schedule->id }}, {{ $schedule->absen_darimana_saja ? 'true' : 'false' }})" class="btn btn-success px-4 fw-bold me-2">
+                                        <button type="button" onclick="openCheckinModal({{ $schedule->id }})" class="btn btn-success px-4 fw-bold me-2">
                                             <i class="fas fa-check me-1"></i> Hadir
                                         </button>
                                         <button type="submit" onclick="this.form.querySelector('.status-input').value='tidak_hadir'" class="btn btn-danger px-4 fw-bold">
@@ -207,7 +207,7 @@
                                         </button>
                                     </form>
                                 @else
-                                    <form action="{{ route('mahasiswa.checkin') }}" method="POST" class="d-inline" onsubmit="return handleUpdateCheckin(event, this, {{ $schedule->id }}, {{ $schedule->absen_darimana_saja ? 'true' : 'false' }})">
+                                    <form action="{{ route('mahasiswa.checkin') }}" method="POST" class="d-inline" onsubmit="return handleUpdateCheckin(event, this, {{ $schedule->id }})">
                                         @csrf
                                         <input type="hidden" name="schedule_id" value="{{ $schedule->id }}">
                                         <input type="hidden" name="latitude" class="lat-input">
@@ -385,9 +385,8 @@
     const CAMPUS_LAT = {{ env('CAMPUS_LATITUDE', -6.175392) }};
     const CAMPUS_LNG = {{ env('CAMPUS_LONGITUDE', 106.827153) }};
 
-    function openCheckinModal(scheduleId, absenDarimanaSaja = false) {
+    function openCheckinModal(scheduleId) {
         document.getElementById('modal-schedule-id').value = scheduleId;
-        currentAbsenDarimanaSaja = absenDarimanaSaja;
         
         // Show modal using Bootstrap API
         if (!checkinModalObj) {
@@ -479,11 +478,11 @@
         }, 500);
     }
 
-    function handleUpdateCheckin(event, form, scheduleId, absenDarimanaSaja = false) {
+    function handleUpdateCheckin(event, form, scheduleId) {
         const select = document.getElementById('status-select-' + scheduleId);
         if (select && select.value === 'hadir') {
             event.preventDefault();
-            openCheckinModal(scheduleId, absenDarimanaSaja);
+            openCheckinModal(scheduleId);
             return false;
         }
         return true; // Proceed with normal submit for non-hadir
@@ -500,25 +499,7 @@
         return R * c;
     }
 
-    // Auto-trigger if returning from QR scan
-    document.addEventListener("DOMContentLoaded", function() {
-        let urlParams = new URLSearchParams(window.location.search);
-        let qrScanId = urlParams.get('qr_scan');
-        
-        if (qrScanId) {
-            // Find if this schedule has anywhere attendance
-            let btn = document.querySelector(`button[onclick^="openCheckinModal(${qrScanId}"]`);
-            let isAnywhere = false;
-            if (btn) {
-                let onclickStr = btn.getAttribute('onclick');
-                isAnywhere = onclickStr.includes('true');
-            }
-            openCheckinModal(qrScanId, isAnywhere);
-            
-            // Remove param from URL so it doesn't re-trigger on refresh
-            window.history.replaceState(null, null, window.location.pathname);
-        }
-    });
+
 </script>
 @endpush
 @endsection

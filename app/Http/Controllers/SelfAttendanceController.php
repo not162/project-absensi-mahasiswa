@@ -120,25 +120,6 @@ class SelfAttendanceController extends Controller
         return $earthRadius * $c;
     }
 
-    /** Mahasiswa: Scan QR Check-in Handler */
-    public function qrCheckIn(Request $request)
-    {
-        $token = $request->query('token');
-        if (!$token) {
-            return redirect()->route('mahasiswa.jadwal')->with('error', 'Token QR tidak valid.');
-        }
-
-        try {
-            $meetingId = decrypt($token);
-            $meeting = ClassMeeting::with('schedule')->findOrFail($meetingId);
-            
-            // Redirect ke halaman jadwal dengan parameter auto-trigger
-            return redirect()->route('mahasiswa.jadwal', ['qr_scan' => $meeting->schedule_id])
-                ->with('success', 'QR Code berhasil di-scan. Mengkonfirmasi lokasi Anda...');
-        } catch (\Exception $e) {
-            return redirect()->route('mahasiswa.jadwal')->with('error', 'Token QR sudah kadaluarsa atau tidak valid.');
-        }
-    }
 
     /** Mahasiswa: Halaman simulasi TOEFL / IELTS */
     public function toeflExam()

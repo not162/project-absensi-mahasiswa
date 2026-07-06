@@ -101,14 +101,7 @@
                             </label>
                         </div>
                     </div>
-                    <div class="col-md-4 align-self-end mb-2">
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" name="absen_darimana_saja" value="1" id="absenDarimanaSajaCheckbox" @checked($schedule->absen_darimana_saja=='1')>
-                            <label class="form-check-label fw-semibold text-success" for="absenDarimanaSajaCheckbox">
-                                <i class="fas fa-globe-asia me-1"></i> Absen Darimana Saja
-                            </label>
-                        </div>
-                    </div>
+
                     <div class="col-md-4" id="replacementDateField" style="display: none;">
                         <label class="form-label fw-semibold">Tanggal Kelas Pengganti <span class="text-danger">*</span></label>
                         <input type="date" name="replacement_date" id="replacement_date" class="form-control" value="{{ $schedule->replacement_date }}">

@@ -281,7 +281,7 @@
                             <i class="fas fa-user-check fs-3"></i>
                         </div>
                         <h4 class="fw-semibold">Absensi Real-Time</h4>
-                        <p class="text-muted mb-0">Catat kehadiran mahasiswa dengan cepat melalui QR Code scan atau validasi mandiri lokasi.</p>
+                        <p class="text-muted mb-0">Catat kehadiran mahasiswa dengan mudah secara manual melalui verifikasi lokasi di portal mahasiswa.</p>
                     </div>
                 </div>
                 <div class="col-md-4">
