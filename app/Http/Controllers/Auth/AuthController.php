@@ -13,7 +13,10 @@ class AuthController extends Controller
      */
     public function showLoginForm()
     {
-        return view('auth.login');
+        $num1 = rand(1, 9);
+        $num2 = rand(1, 9);
+        session(['captcha_result' => $num1 + $num2]);
+        return view('auth.login', compact('num1', 'num2'));
     }
 
     /**
@@ -21,18 +24,33 @@ class AuthController extends Controller
      */
     public function login(Request $request)
     {
-        $credentials = $request->validate([
-            'email' => 'required|email',
+        $request->validate([
+            'username' => 'required',
             'password' => 'required|min:6',
-            'role' => 'required|in:user,dosen,admin',
+            'captcha_answer' => 'required|integer',
         ]);
 
-        if (Auth::attempt($credentials, $request->boolean('remember'))) {
+        // Verify captcha
+        if (session('captcha_result') === null || (int)$request->captcha_answer !== session('captcha_result')) {
+            return redirect()->back()->withErrors(['captcha_answer' => 'Jawaban verifikasi salah!'])->withInput();
+        }
+
+        $username = $request->username;
+        $password = $request->password;
+
+        // Try to find the user by NIM (mahasiswa), NIP/kode_dosen (dosen), or email (admin)
+        $user = \App\Models\User::where('nim', $username)
+            ->orWhere('kode_dosen', $username)
+            ->orWhere('email', $username)
+            ->first();
+
+        if ($user && Auth::attempt(['email' => $user->email, 'password' => $password], $request->boolean('remember'))) {
             $request->session()->regenerate();
+            $request->session()->forget('captcha_result'); // clean up
             return redirect()->route('dashboard')->with('success', 'Login berhasil!');
         }
 
-        return redirect()->back()->with('error', 'Email, password, atau role salah');
+        return redirect()->back()->withErrors(['username' => 'NIP/NIM atau password salah.'])->withInput();
     }
 
     /**

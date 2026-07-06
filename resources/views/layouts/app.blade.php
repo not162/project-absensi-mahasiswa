@@ -156,20 +156,30 @@
                                     <i class="fas fa-file-signature me-2"></i> Jadwal Ujian
                                 </a>
                             </li>
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('dosen.modules.*') ? 'active' : '' }}" href="{{ route('dosen.modules.index') }}">
+                                    <i class="fas fa-book-open me-2"></i> Modul LMS
+                                </a>
+                            </li>
                         @else
                             <li class="nav-item">
-                                <a class="nav-link {{ request()->routeIs('mahasiswa.jadwal') ? 'active' : '' }}" href="{{ route('mahasiswa.jadwal') }}">
-                                    <i class="fas fa-calendar-alt me-2"></i> Jadwal Kuliah
+                                <a class="nav-link {{ request()->routeIs('profile.show') ? 'active' : '' }}" href="{{ route('profile.show') }}">
+                                    <i class="fas fa-user-circle me-2"></i> Profile Mahasiswa
                                 </a>
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link {{ request()->routeIs('exam.*') ? 'active' : '' }}" href="{{ route('exam.index', ['tipe' => 'uts']) }}">
-                                    <i class="fas fa-file-signature me-2"></i> Jadwal Ujian
+                                    <i class="fas fa-file-signature me-2"></i> Ujian
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link {{ request()->routeIs('profile.*') ? 'active' : '' }}" href="{{ route('profile.show') }}">
-                                    <i class="fas fa-user-circle me-2"></i> Profil
+                                <a class="nav-link {{ request()->routeIs('mahasiswa.toefl') ? 'active' : '' }}" href="{{ route('mahasiswa.toefl') }}">
+                                    <i class="fas fa-language me-2"></i> Ujian TOEFL/IELTS
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('mahasiswa.jadwal_kelas') ? 'active' : '' }}" href="{{ route('mahasiswa.jadwal_kelas') }}">
+                                    <i class="fas fa-calendar-alt me-2"></i> Jadwal Kuliah & Kelas Pengganti
                                 </a>
                             </li>
                         @endif

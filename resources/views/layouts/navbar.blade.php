@@ -80,33 +80,28 @@
                         </li>
                     @else
                         <li class="nav-item">
-                            <a class="nav-link text-white" href="{{ route('dashboard') }}">
+                            <a class="nav-link text-white {{ request()->routeIs('dashboard') ? 'active fw-bold' : '' }}" href="{{ route('dashboard') }}">
                                 <i class="fas fa-home me-1"></i> Dashboard
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-white" href="{{ route('schedules.mahasiswa') }}">
-                                <i class="fas fa-calendar me-1"></i> Jadwal Kuliah
+                            <a class="nav-link text-white {{ request()->routeIs('profile.show') ? 'active fw-bold' : '' }}" href="{{ route('profile.show') }}">
+                                <i class="fas fa-user-circle me-1"></i> Profile Mahasiswa
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-white" href="{{ route('exam.index', ['tipe' => 'uts']) }}">
-                                <i class="fas fa-file-alt me-1"></i> Jadwal UTS/UAS
+                            <a class="nav-link text-white {{ request()->routeIs('exam.*') ? 'active fw-bold' : '' }}" href="{{ route('exam.index', ['tipe' => 'uts']) }}">
+                                <i class="fas fa-file-alt me-1"></i> Ujian
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-white" href="{{ route('grades.my') }}">
-                                <i class="fas fa-star me-1"></i> Nilai Saya
+                            <a class="nav-link text-white {{ request()->routeIs('mahasiswa.toefl') ? 'active fw-bold' : '' }}" href="{{ route('mahasiswa.toefl') }}">
+                                <i class="fas fa-language me-1"></i> Ujian TOEFL/IELTS
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-white" href="{{ route('repeats.my') }}">
-                                <i class="fas fa-redo me-1"></i> Pengulangan
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-white" href="{{ route('attendance.index') }}">
-                                <i class="fas fa-clipboard-list me-1"></i> Absensi
+                            <a class="nav-link text-white {{ request()->routeIs('mahasiswa.jadwal_kelas') ? 'active fw-bold' : '' }}" href="{{ route('mahasiswa.jadwal_kelas') }}">
+                                <i class="fas fa-calendar-alt me-1"></i> Jadwal Kuliah & Kelas Pengganti
                             </a>
                         </li>
                     @endif

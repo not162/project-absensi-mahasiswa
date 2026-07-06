@@ -64,26 +64,33 @@ class ScheduleController extends Controller
     {
         $courses  = Course::with('department')->get();
         $dosens   = User::where('role', 'dosen')->get();
-        return view('admin.jadwal.create', compact('courses', 'dosens'));
+        $classes  = \App\Models\Kelas::orderBy('semester')->orderBy('nomor_kelas')->get();
+        return view('admin.jadwal.create', compact('courses', 'dosens', 'classes'));
     }
 
     /** Simpan jadwal baru */
     public function store(Request $request)
     {
         $request->validate([
-            'course_id'    => 'required|exists:courses,id',
-            'user_id'      => 'required|exists:users,id',
-            'hari'         => 'required|in:Senin,Selasa,Rabu,Kamis,Jumat,Sabtu',
-            'jam_mulai'    => 'required',
-            'jam_selesai'  => 'required|after:jam_mulai',
-            'mode'         => 'required|in:offline,online',
-            'ruangan'      => 'required_if:mode,offline|nullable|string|max:50',
-            'link_online'  => 'required_if:mode,online|nullable|url',
-            'kode_online'  => 'nullable|string|max:100',
-            'tahun_ajaran' => 'required|string',
+            'course_id'        => 'required|exists:courses,id',
+            'user_id'          => 'required|exists:users,id',
+            'class_id'         => 'required|exists:classes,id',
+            'hari'             => 'required|in:Senin,Selasa,Rabu,Kamis,Jumat,Sabtu',
+            'jam_mulai'        => 'required',
+            'jam_selesai'      => 'required|after:jam_mulai',
+            'mode'             => 'required|in:offline,online',
+            'ruangan'          => 'required_if:mode,offline|nullable|string|max:50',
+            'link_online'      => 'required_if:mode,online|nullable|url',
+            'kode_online'      => 'nullable|string|max:100',
+            'tahun_ajaran'     => 'required|string',
+            'is_replacement'   => 'nullable|boolean',
+            'replacement_date' => 'required_if:is_replacement,1|nullable|date',
         ]);
 
-        Schedule::create($request->all());
+        $data = $request->all();
+        $data['is_replacement'] = $request->has('is_replacement') ? 1 : 0;
+
+        Schedule::create($data);
 
         return redirect()->route('schedules.index')
                          ->with('success', 'Jadwal berhasil ditambahkan.');
@@ -94,26 +101,33 @@ class ScheduleController extends Controller
     {
         $courses = Course::with('department')->get();
         $dosens  = User::where('role', 'dosen')->get();
-        return view('admin.jadwal.edit', compact('schedule', 'courses', 'dosens'));
+        $classes = \App\Models\Kelas::orderBy('semester')->orderBy('nomor_kelas')->get();
+        return view('admin.jadwal.edit', compact('schedule', 'courses', 'dosens', 'classes'));
     }
 
     /** Update jadwal */
     public function update(Request $request, Schedule $schedule)
     {
         $request->validate([
-            'course_id'    => 'required|exists:courses,id',
-            'user_id'      => 'required|exists:users,id',
-            'hari'         => 'required|in:Senin,Selasa,Rabu,Kamis,Jumat,Sabtu',
-            'jam_mulai'    => 'required',
-            'jam_selesai'  => 'required|after:jam_mulai',
-            'mode'         => 'required|in:offline,online',
-            'ruangan'      => 'required_if:mode,offline|nullable|string|max:50',
-            'link_online'  => 'required_if:mode,online|nullable|url',
-            'kode_online'  => 'nullable|string|max:100',
-            'tahun_ajaran' => 'required|string',
+            'course_id'        => 'required|exists:courses,id',
+            'user_id'          => 'required|exists:users,id',
+            'class_id'         => 'required|exists:classes,id',
+            'hari'             => 'required|in:Senin,Selasa,Rabu,Kamis,Jumat,Sabtu',
+            'jam_mulai'        => 'required',
+            'jam_selesai'      => 'required|after:jam_mulai',
+            'mode'             => 'required|in:offline,online',
+            'ruangan'          => 'required_if:mode,offline|nullable|string|max:50',
+            'link_online'      => 'required_if:mode,online|nullable|url',
+            'kode_online'      => 'nullable|string|max:100',
+            'tahun_ajaran'     => 'required|string',
+            'is_replacement'   => 'nullable|boolean',
+            'replacement_date' => 'required_if:is_replacement,1|nullable|date',
         ]);
 
-        $schedule->update($request->all());
+        $data = $request->all();
+        $data['is_replacement'] = $request->has('is_replacement') ? 1 : 0;
+
+        $schedule->update($data);
 
         return redirect()->route('schedules.index')
                          ->with('success', 'Jadwal berhasil diperbarui.');

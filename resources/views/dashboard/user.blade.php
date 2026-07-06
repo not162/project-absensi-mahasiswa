@@ -8,9 +8,14 @@
             <h2 class="fw-bold">Selamat Datang, {{ $user->name }} 👋</h2>
             <p class="text-muted mb-0">{{ now()->translatedFormat('l, d F Y') }}</p>
         </div>
-        <a href="{{ route('repeats.my') }}" class="btn btn-primary">
-            <i class="fas fa-redo me-1"></i> Ajukan Pengulangan
-        </a>
+        <div class="d-flex gap-2">
+            <a href="{{ route('stem.index') }}" class="btn btn-warning shadow-sm fw-bold">
+                <i class="fas fa-brain me-1"></i> Ujian Uji Coba STEM
+            </a>
+            <a href="{{ route('repeats.my') }}" class="btn btn-primary shadow-sm">
+                <i class="fas fa-redo me-1"></i> Ajukan Pengulangan
+            </a>
+        </div>
     </div>
 
     @if(session('success'))
@@ -18,6 +23,52 @@
             {{ session('success') }}
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
+    @endif
+
+    {{-- Widget Absen Cepat (Menampilkan kelas aktif hari ini) --}}
+    @if(isset($activeMeetings) && $activeMeetings->count() > 0)
+        <div class="row mb-4">
+            @foreach($activeMeetings as $meeting)
+            <div class="col-12">
+                <div class="card border-primary shadow-sm">
+                    <div class="card-body d-flex flex-column flex-md-row justify-content-between align-items-center">
+                        <div class="mb-3 mb-md-0">
+                            <h5 class="fw-bold text-primary mb-1">
+                                <span class="spinner-grow spinner-grow-sm text-danger me-2" role="status"></span>
+                                Sedang Berlangsung: {{ $meeting->schedule->course->nama_matkul ?? '-' }}
+                            </h5>
+                            <p class="text-muted mb-0">Pertemuan Ke-{{ $meeting->pertemuan_ke }} &mdash; {{ $meeting->schedule->lecturer->name ?? '-' }}</p>
+                        </div>
+                        <div>
+                            @php
+                                $alreadyCheckedIn = \App\Models\StudentAttendance::where('meeting_id', $meeting->id)
+                                                    ->where('student_id', $user->id)
+                                                    ->exists();
+                            @endphp
+                            @if($alreadyCheckedIn)
+                                <a href="{{ route('mahasiswa.jadwal') }}" class="btn btn-success px-4 rounded-pill">
+                                    <i class="fas fa-check-circle me-1"></i> Sudah Absen
+                                </a>
+                            @else
+                                <a href="{{ route('mahasiswa.jadwal') }}" class="btn btn-danger px-4 rounded-pill shadow-sm heartbeat-animation">
+                                    <i class="fas fa-fingerprint me-1"></i> ABSEN SEKARANG
+                                </a>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+            </div>
+            @endforeach
+        </div>
+
+        <style>
+            .heartbeat-animation { animation: heartbeat 1.5s infinite; }
+            @keyframes heartbeat {
+                0% { transform: scale(1); }
+                50% { transform: scale(1.05); }
+                100% { transform: scale(1); }
+            }
+        </style>
     @endif
 
     {{-- Kartu Statistik --}}

@@ -97,4 +97,10 @@ public function kelas()
     {
         return $this->hasMany(ExamSchedule::class, 'pengawas_id');
     }
+
+    /** Riwayat simulasi TOEFL/IELTS mahasiswa */
+    public function toeflResults()
+    {
+        return $this->hasMany(ToeflResult::class, 'user_id');
+    }
 }

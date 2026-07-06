@@ -41,6 +41,100 @@
         </div>
     </div>
 
+    @if(count($pendingStudents))
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card border-warning">
+                <div class="card-header bg-warning bg-opacity-10 d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 text-warning-emphasis fw-bold">
+                        <i class="fas fa-user-clock me-2"></i> Persetujuan Mahasiswa Baru (Belum Masuk Kelas)
+                    </h5>
+                    <span class="badge bg-warning text-dark">{{ count($pendingStudents) }} Mahasiswa</span>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0" style="font-size: 0.95rem;">
+                            <thead>
+                                <tr>
+                                    <th>Nama Lengkap</th>
+                                    <th>NIM</th>
+                                    <th>Email</th>
+                                    <th>Tanggal Daftar</th>
+                                    <th>Pilih Program Studi</th>
+                                    <th>Pilih Kelas</th>
+                                    <th class="text-end">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($pendingStudents as $student)
+                                    <tr>
+                                        <td><strong>{{ $student->name }}</strong></td>
+                                        <td><code>{{ $student->nim }}</code></td>
+                                        <td>{{ $student->email }}</td>
+                                        <td>{{ $student->created_at->format('d M Y H:i') }}</td>
+                                        <form action="{{ route('users.assignClass', $student->id) }}" method="POST">
+                                            @csrf
+                                            <td>
+                                                <select name="department_id" class="form-select form-select-sm" required id="dept-select-{{ $student->id }}" onchange="filterClassesForStudent({{ $student->id }})">
+                                                    <option value="" disabled selected>-- Pilih Prodi --</option>
+                                                    @foreach($allDepartments as $dept)
+                                                        <option value="{{ $dept->id }}">{{ $dept->name }}</option>
+                                                    @endforeach
+                                                </select>
+                                            </td>
+                                            <td>
+                                                <select name="class_id" class="form-select form-select-sm" required id="class-select-{{ $student->id }}">
+                                                    <option value="" disabled selected>-- Pilih Kelas --</option>
+                                                    @foreach($allClasses as $kelas)
+                                                        <option value="{{ $kelas->id }}" data-dept="{{ $kelas->department_id }}" style="display: none;">
+                                                            Kelas {{ $kelas->nomor_kelas }} (Sem. {{ $kelas->semester }})
+                                                        </option>
+                                                    @endforeach
+                                                </select>
+                                            </td>
+                                            <td class="text-end">
+                                                <button type="submit" class="btn btn-sm btn-success">
+                                                    <i class="fas fa-check-circle me-1"></i> Setujui & Tempatkan
+                                                </button>
+                                            </td>
+                                        </form>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script to dynamically filter classes dropdown based on selected department for a student -->
+    <script>
+        function filterClassesForStudent(studentId) {
+            const deptSelect = document.getElementById('dept-select-' + studentId);
+            const classSelect = document.getElementById('class-select-' + studentId);
+            const selectedDeptId = deptSelect.value;
+            
+            // Reset class select
+            classSelect.value = "";
+            
+            // Show only classes matching the selected department
+            Array.from(classSelect.options).forEach(option => {
+                if (option.value === "") {
+                    option.style.display = "block";
+                    return;
+                }
+                const optionDeptId = option.getAttribute('data-dept');
+                if (optionDeptId === selectedDeptId) {
+                    option.style.display = "block";
+                } else {
+                    option.style.display = "none";
+                }
+            });
+        }
+    </script>
+    @endif
+
     <div class="row mb-4">
         <div class="col-md-12">
             <div class="card">

@@ -38,10 +38,15 @@
                            placeholder="cth: Bab 3 - Struktur Data Array">
                 </div>
 
-                {{-- Tombol set semua --}}
-                <div class="d-flex gap-2 mb-3">
+                {{-- Tombol set semua dan QR --}}
+                <div class="d-flex gap-2 mb-3 align-items-center">
                     <button type="button" class="btn btn-sm btn-outline-secondary" onclick="setAll('hadir')">Semua Hadir</button>
                     <button type="button" class="btn btn-sm btn-outline-secondary" onclick="setAll('tidak_hadir')">Semua Tidak Hadir</button>
+                    <div class="ms-auto">
+                        <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#qrModal">
+                            <i class="fas fa-qrcode me-1"></i> Tampilkan QR Absensi
+                        </button>
+                    </div>
                 </div>
 
                 {{-- Tabel mahasiswa --}}
@@ -191,6 +196,27 @@
     </div>
 </div>
 
+<!-- Modal QR Code -->
+<div class="modal fade" id="qrModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title"><i class="fas fa-qrcode me-2"></i> Scan QR untuk Absen</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center py-5">
+                <h4 class="mb-3">{{ $schedule->course->nama_matkul ?? '-' }}</h4>
+                <p class="text-muted mb-4">Minta mahasiswa untuk memindai QR Code ini untuk melakukan check-in kehadiran secara otomatis.</p>
+                <div id="qrcode" class="d-flex justify-content-center mb-4"></div>
+                <div class="alert alert-info d-inline-block">
+                    <i class="fas fa-map-marker-alt me-2"></i><strong>Penting:</strong> Mahasiswa harus berada di area kampus (radius 200m).
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
 function setAll(status) {
     document.querySelectorAll(`input[type=radio][value="${status}"]`).forEach(r => r.checked = true);
@@ -222,6 +248,28 @@ document.addEventListener("DOMContentLoaded", function() {
     }
     
     setInterval(pollMeetingAttendance, 3000); // 3 seconds for near real-time feel
+
+    // Generate QR Code
+    @php
+        $qrUrl = route('mahasiswa.qrCheckin', ['token' => encrypt($meeting->id)]);
+    @endphp
+    
+    // Check if modal is shown to generate QR (avoids generating multiple times if hidden)
+    const qrModal = document.getElementById('qrModal');
+    let qrCodeGenerated = false;
+    qrModal.addEventListener('shown.bs.modal', function () {
+        if(!qrCodeGenerated) {
+            new QRCode(document.getElementById("qrcode"), {
+                text: "{{ $qrUrl }}",
+                width: 300,
+                height: 300,
+                colorDark : "#000000",
+                colorLight : "#ffffff",
+                correctLevel : QRCode.CorrectLevel.H
+            });
+            qrCodeGenerated = true;
+        }
+    });
 });
 </script>
 @endsection

@@ -108,5 +108,112 @@
         </div>
     </div>
 
+    {{-- Jadwal & Ringkasan Kehadiran --}}
+    <div class="row mt-4 g-4">
+        {{-- Jadwal Mengajar Hari Ini --}}
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-0 py-3">
+                    <h5 class="fw-bold mb-0 text-dark">
+                        <i class="fas fa-calendar-day text-primary me-2"></i> Jadwal Mengajar Hari Ini
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Jam</th>
+                                    <th>Mata Kuliah</th>
+                                    <th>Kelas</th>
+                                    <th>Ruangan</th>
+                                    <th>Mahasiswa</th>
+                                    <th>Status / Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse($todaySchedules as $schedule)
+                                <tr>
+                                    <td class="fw-bold text-primary">{{ substr($schedule->jam_mulai, 0, 5) }} - {{ substr($schedule->jam_selesai, 0, 5) }}</td>
+                                    <td>
+                                        <span class="d-block fw-semibold text-dark">{{ $schedule->course->nama_matkul ?? '-' }}</span>
+                                        <small class="text-muted">{{ $schedule->course->kode_matkul ?? '' }}</small>
+                                    </td>
+                                    <td>{{ $schedule->kelas->department->name ?? '-' }} (Sem {{ $schedule->kelas->semester ?? '-' }})</td>
+                                    <td>
+                                        @if($schedule->isOnline())
+                                            <span class="badge bg-info text-white"><i class="fas fa-video me-1"></i> Online</span>
+                                        @else
+                                            <span class="badge bg-secondary text-white"><i class="fas fa-door-open me-1"></i> {{ $schedule->ruangan ?? '-' }}</span>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-light text-dark border">{{ $schedule->kelas->mahasiswa->count() }} orang</span>
+                                    </td>
+                                    <td>
+                                        @if($meetingsDone->contains($schedule->id))
+                                            <span class="badge bg-success py-2 px-3"><i class="fas fa-check-circle me-1"></i> Sudah Diabsen</span>
+                                        @else
+                                            <a href="{{ route('absensi.start', $schedule) }}" class="btn btn-sm btn-primary py-2 px-3">
+                                                <i class="fas fa-clipboard-list me-1"></i> Mulai Absensi
+                                            </a>
+                                        @endif
+                                    </td>
+                                </tr>
+                                @empty
+                                <tr>
+                                    <td colspan="6" class="text-center py-5 text-muted">
+                                        <i class="fas fa-calendar-times fa-2x mb-2 d-block"></i>
+                                        Tidak ada jadwal mengajar hari ini.
+                                    </td>
+                                </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- Ringkasan Kehadiran Kelas yang Diampu --}}
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-0 py-3">
+                    <h5 class="fw-bold mb-0 text-dark">
+                        <i class="fas fa-chart-line text-success me-2"></i> Kehadiran Kelas diampu
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group list-group-flush">
+                        @forelse($classAttendanceSummary as $item)
+                        <div class="list-group-item px-0 py-3">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="fw-semibold text-dark small text-truncate" style="max-width: 180px;" title="{{ $item['course_name'] }}">
+                                    {{ $item['course_name'] }}
+                                </span>
+                                <span class="badge bg-{{ $item['percentage'] >= 80 ? 'success' : ($item['percentage'] >= 60 ? 'warning' : 'danger') }}">
+                                    {{ $item['percentage'] }}%
+                                </span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center text-muted small mb-2">
+                                <span>Kelas: {{ $item['class_name'] }}</span>
+                                <span>{{ $item['total_meetings'] }} Pertemuan</span>
+                            </div>
+                            <div class="progress" style="height: 6px;">
+                                <div class="progress-bar bg-{{ $item['percentage'] >= 80 ? 'success' : ($item['percentage'] >= 60 ? 'warning' : 'danger') }}" role="progressbar" style="width: {{ $item['percentage'] }}%"></div>
+                            </div>
+                        </div>
+                        @empty
+                        <div class="text-center py-5 text-muted">
+                            <i class="fas fa-folder-open fa-2x mb-2 d-block"></i>
+                            Belum ada rekap data kelas.
+                        </div>
+                        @endforelse
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </div>
 @endsection

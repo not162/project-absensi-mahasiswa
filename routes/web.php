@@ -25,7 +25,7 @@ Route::get('/', function () {
     if (auth()->check()) {
         return redirect()->route('dashboard');
     }
-    return redirect()->route('auth.login');
+    return view('welcome');
 });
 
 // Auth Routes
@@ -101,12 +101,13 @@ Route::middleware('auth')->group(function () {
         Route::post('/teaching-attendance/admin-store', [TeachingAttendanceController::class, 'adminStore'])->name('teaching-attendance.adminStore');
         
         // Course Repeats Admin
-        Route::get('/repeats', [CourseRepeatController::class, 'index'])->name('repeats.index');
-        Route::post('/repeats/{repeat}/approve', [CourseRepeatController::class, 'approve'])->name('repeats.approve');
-        Route::post('/repeats/{repeat}/reject', [CourseRepeatController::class, 'reject'])->name('repeats.reject');
-        Route::delete('/repeats/{repeat}', [CourseRepeatController::class, 'destroy'])->name('repeats.destroy');
+        Route::get('/admin/repeats', [CourseRepeatController::class, 'index'])->name('repeats.index');
+        Route::post('/admin/repeats/{repeat}/approve', [CourseRepeatController::class, 'approve'])->name('repeats.approve');
+        Route::post('/admin/repeats/{repeat}/reject', [CourseRepeatController::class, 'reject'])->name('repeats.reject');
+        Route::delete('/admin/repeats/{repeat}', [CourseRepeatController::class, 'destroy'])->name('repeats.destroy');
         
         Route::get('/absensi/rekap-admin', [StudentAttendanceController::class, 'rekapAdmin'])->name('absensi.rekapAdmin');
+        Route::post('/admin/users/{student}/assign-class', [App\Http\Controllers\Admin\StudentVerificationController::class, 'assignClass'])->name('users.assignClass');
     });
 
     // ──────────────────────────────────────────────────────────
@@ -143,6 +144,18 @@ Route::middleware('auth')->group(function () {
             return redirect()->route('schedules.byDosen', Auth::user());
         })->name('dosen.jadwal');
         Route::get('/my-supervisions', [ExamScheduleController::class, 'mySupervisions'])->name('exam.mySupervisions');
+        // Exam / Supervisions
+        Route::get('/exam-supervisions', [App\Http\Controllers\ExamScheduleController::class, 'dosenSupervisions'])->name('dosen.supervisions.index');
+
+        // LMS Modules
+        Route::resource('modules', App\Http\Controllers\LearningModuleController::class)->names([
+            'index' => 'dosen.modules.index',
+            'create' => 'dosen.modules.create',
+            'store' => 'dosen.modules.store',
+            'edit' => 'dosen.modules.edit',
+            'update' => 'dosen.modules.update',
+            'destroy' => 'dosen.modules.destroy',
+        ]);
     });
 
     // ──────────────────────────────────────────────────────────
@@ -152,11 +165,30 @@ Route::middleware('auth')->group(function () {
         Route::get('/schedules/mahasiswa', [ScheduleController::class, 'mahasiswaJadwal'])->name('schedules.mahasiswa');
         Route::get('/jadwal-kuliah', [SelfAttendanceController::class, 'index'])->name('mahasiswa.jadwal');
         Route::post('/self-checkin', [SelfAttendanceController::class, 'checkIn'])->name('mahasiswa.checkin');
+        Route::get('/self-checkin/qr', [SelfAttendanceController::class, 'qrCheckIn'])->name('mahasiswa.qrCheckin');
         
         Route::get('/my-grades', [GradeController::class, 'myGrades'])->name('grades.my');
         
-        Route::get('/my-repeats', [CourseRepeatController::class, 'myRepeats'])->name('repeats.my');
-        Route::post('/repeats', [CourseRepeatController::class, 'store'])->name('repeats.store');
+        // Repeat Course Routes
+        Route::get('/repeats', [App\Http\Controllers\CourseRepeatController::class, 'index'])->name('repeats.my');
+        Route::post('/repeats', [App\Http\Controllers\CourseRepeatController::class, 'store'])->name('repeats.store');
+
+        // STEM Exam Routes
+        Route::get('/stem-exam', [App\Http\Controllers\StemExamController::class, 'index'])->name('stem.index');
+        Route::get('/stem-exam/start/{id}', [App\Http\Controllers\StemExamController::class, 'start'])->name('stem.start');
+        Route::post('/stem-exam/submit/{attemptId}', [App\Http\Controllers\StemExamController::class, 'submit'])->name('stem.submit');
+        Route::get('/stem-exam/result/{attemptId}', [App\Http\Controllers\StemExamController::class, 'result'])->name('stem.result');
+        Route::get('/stem-exam/pdf/{attemptId}', [App\Http\Controllers\StemExamController::class, 'printPdf'])->name('stem.pdf');
+        
+        // LMS Module View
+        Route::get('/stem-exam/module/{id}', [App\Http\Controllers\LearningModuleController::class, 'show'])->name('stem.module.show');
+
+        // TOEFL & Jadwal Kelas Routes
+        Route::get('/toefl-exam', [SelfAttendanceController::class, 'toeflExam'])->name('mahasiswa.toefl');
+        Route::get('/toefl-exam/take', [SelfAttendanceController::class, 'takeToefl'])->name('mahasiswa.toefl.take');
+        Route::post('/toefl-exam/submit', [SelfAttendanceController::class, 'submitToefl'])->name('mahasiswa.toefl.submit');
+        Route::get('/toefl-exam/result/{id}', [SelfAttendanceController::class, 'toeflResult'])->name('mahasiswa.toefl.result');
+        Route::get('/jadwal-kelas', [SelfAttendanceController::class, 'jadwalKelas'])->name('mahasiswa.jadwal_kelas');
     });
 
     // ──────────────────────────────────────────────────────────

@@ -39,6 +39,17 @@
                             @endforeach
                         </select>
                     </div>
+                    <div class="col-md-12">
+                        <label class="form-label fw-semibold">Kelas & Prodi <span class="text-danger">*</span></label>
+                        <select name="class_id" class="form-select" required>
+                            <option value="">-- Pilih Kelas --</option>
+                            @foreach($classes as $kelas)
+                                <option value="{{ $kelas->id }}" @selected($schedule->class_id==$kelas->id)>
+                                    Kelas {{ $kelas->nomor_kelas }} — {{ $kelas->department->name ?? '' }} (Sem. {{ $kelas->semester }})
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
                     <div class="col-md-4">
                         <label class="form-label fw-semibold">Hari <span class="text-danger">*</span></label>
                         <select name="hari" class="form-select" required>
@@ -82,6 +93,18 @@
                             @endforeach
                         </select>
                     </div>
+                    <div class="col-md-4 align-self-end mb-2">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="is_replacement" value="1" id="isReplacementCheckbox" @checked($schedule->is_replacement=='1') onchange="toggleReplacementDate()">
+                            <label class="form-check-label fw-semibold" for="isReplacementCheckbox">
+                                Jadwal Kelas Pengganti
+                            </label>
+                        </div>
+                    </div>
+                    <div class="col-md-4" id="replacementDateField" style="display: none;">
+                        <label class="form-label fw-semibold">Tanggal Kelas Pengganti <span class="text-danger">*</span></label>
+                        <input type="date" name="replacement_date" id="replacement_date" class="form-control" value="{{ $schedule->replacement_date }}">
+                    </div>
                 </div>
 
                 <hr class="my-4">
@@ -103,6 +126,21 @@ function toggleMode() {
     document.getElementById('linkField').style.display = mode === 'online' ? '' : 'none';
     document.getElementById('kodeField').style.display = mode === 'online' ? '' : 'none';
 }
-document.addEventListener('DOMContentLoaded', toggleMode);
+function toggleReplacementDate() {
+    const isChecked = document.getElementById('isReplacementCheckbox').checked;
+    const field = document.getElementById('replacementDateField');
+    const input = document.getElementById('replacement_date');
+    field.style.display = isChecked ? 'block' : 'none';
+    if (isChecked) {
+        input.setAttribute('required', 'required');
+    } else {
+        input.removeAttribute('required');
+        input.value = '';
+    }
+}
+document.addEventListener('DOMContentLoaded', function() {
+    toggleMode();
+    toggleReplacementDate();
+});
 </script>
 @endsection

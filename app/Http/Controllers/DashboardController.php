@@ -7,6 +7,11 @@ use App\Models\User;
 use App\Models\Department;
 use App\Models\LecturerCourse;
 use App\Models\Course;
+use App\Models\Schedule;
+use App\Models\ClassMeeting;
+use App\Models\StudentAttendance;
+use App\Models\CourseRepeat;
+use App\Models\Kelas;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
 
@@ -77,12 +82,20 @@ class DashboardController extends Controller
             }
 
             // Pengajuan Pengulangan Mata Kuliah yang masih pending
-            $pendingRepeats = \App\Models\CourseRepeat::with(['student', 'course'])
+            $pendingRepeats = CourseRepeat::with(['student', 'course'])
                 ->where('status', 'pending')
                 ->orderByDesc('created_at')
                 ->limit(5)
                 ->get();
-            $totalPendingRepeats = \App\Models\CourseRepeat::where('status', 'pending')->count();
+            $totalPendingRepeats = CourseRepeat::where('status', 'pending')->count();
+
+            // Mahasiswa baru yang belum mendapatkan kelas
+            $pendingStudents = User::where('role', 'user')
+                ->whereNull('class_id')
+                ->orderBy('created_at', 'desc')
+                ->get();
+            $allDepartments = Department::orderBy('name')->get();
+            $allClasses = Kelas::orderBy('semester')->orderBy('nomor_kelas')->get();
 
             return view('dashboard.admin', [
                 'totalUsers' => $totalUsers,
@@ -100,6 +113,9 @@ class DashboardController extends Controller
                 'weeklyAbsent' => $weeklyAbsent,
                 'pendingRepeats' => $pendingRepeats,
                 'totalPendingRepeats' => $totalPendingRepeats,
+                'pendingStudents' => $pendingStudents,
+                'allDepartments' => $allDepartments,
+                'allClasses' => $allClasses,
             ]);
         }
 
@@ -111,37 +127,60 @@ class DashboardController extends Controller
             $hari = $hariMap[$today->format('l')] ?? $today->format('l');
 
             // Jadwal hari ini milik dosen (beserta info kelas)
-            $todaySchedules = \App\Models\Schedule::with(['course.department', 'kelas.mahasiswa'])
+            $todaySchedules = Schedule::with(['course.department', 'kelas.mahasiswa'])
                 ->where('user_id', $user->id)
                 ->where('hari', $hari)
                 ->orderBy('jam_mulai')
                 ->get();
 
             // Apakah sudah absen di jadwal hari ini?
-            $meetingsDone = \App\Models\ClassMeeting::where('lecturer_id', $user->id)
+            $meetingsDone = ClassMeeting::where('lecturer_id', $user->id)
                 ->whereDate('tanggal', $today)
                 ->pluck('schedule_id');
 
             // Kartu statistik
             // 1. Mata kuliah diampu (unique)
-            $totalMatkulDiampu = \App\Models\Schedule::where('user_id', $user->id)
+            $totalMatkulDiampu = Schedule::where('user_id', $user->id)
                 ->distinct('course_id')->count('course_id');
 
             // 2. Total mahasiswa (dari semua kelas yang diajar)
-            $kelasIds = \App\Models\Schedule::where('user_id', $user->id)
+            $kelasIds = Schedule::where('user_id', $user->id)
                 ->whereNotNull('class_id')->pluck('class_id')->unique();
-            $totalMahasiswa = \App\Models\User::where('role', 'user')
+            $totalMahasiswa = User::where('role', 'user')
                 ->whereIn('class_id', $kelasIds)->count();
 
             // 3. Pertemuan hari ini (sudah diabsen)
             $pertemuanHariIni = $meetingsDone->count();
 
             // 4. Rata-rata persentase kehadiran dari semua pertemuan yang sudah berlangsung
-            $allMeetings = \App\Models\ClassMeeting::where('lecturer_id', $user->id)->pluck('id');
-            $totalAbsenRecord = \App\Models\StudentAttendance::whereIn('meeting_id', $allMeetings)->count();
-            $totalHadir = \App\Models\StudentAttendance::whereIn('meeting_id', $allMeetings)
+            $allMeetings = ClassMeeting::where('lecturer_id', $user->id)->pluck('id');
+            $totalAbsenRecord = StudentAttendance::whereIn('meeting_id', $allMeetings)->count();
+            $totalHadir = StudentAttendance::whereIn('meeting_id', $allMeetings)
                 ->where('status', 'hadir')->count();
             $persenKehadiran = $totalAbsenRecord > 0 ? round(($totalHadir / $totalAbsenRecord) * 100) : 0;
+
+            // 5. Ringkasan kehadiran per kelas yang diampu
+            $courseSchedules = Schedule::with(['course', 'kelas'])
+                ->where('user_id', $user->id)
+                ->get();
+
+            $classAttendanceSummary = [];
+            foreach ($courseSchedules as $schedule) {
+                $meetingIds = ClassMeeting::where('schedule_id', $schedule->id)->pluck('id');
+                $totalRecord = StudentAttendance::whereIn('meeting_id', $meetingIds)->count();
+                $hadirRecord = StudentAttendance::whereIn('meeting_id', $meetingIds)
+                    ->where('status', 'hadir')
+                    ->count();
+                
+                $percentage = $totalRecord > 0 ? round(($hadirRecord / $totalRecord) * 100) : 0;
+                
+                $classAttendanceSummary[] = [
+                    'course_name' => $schedule->course->nama_matkul ?? '-',
+                    'class_name' => $schedule->kelas ? 'Sem ' . $schedule->kelas->semester . ' - ' . $schedule->kelas->nomor_kelas : '-',
+                    'total_meetings' => $meetingIds->count(),
+                    'percentage' => $percentage,
+                ];
+            }
 
             return view('dashboard.dosen', [
                 'totalMatkulDiampu'  => $totalMatkulDiampu,
@@ -149,6 +188,9 @@ class DashboardController extends Controller
                 'pertemuanHariIni'   => $pertemuanHariIni,
                 'persenKehadiran'    => $persenKehadiran,
                 'hari'               => $hari,
+                'todaySchedules'     => $todaySchedules,
+                'meetingsDone'       => $meetingsDone,
+                'classAttendanceSummary' => $classAttendanceSummary,
             ]);
         }
 
@@ -157,7 +199,7 @@ class DashboardController extends Controller
 
         // Jadwal kuliah mahasiswa (berdasarkan kelas)
         $jadwalKuliah = $kelas
-            ? \App\Models\Schedule::with(['course', 'lecturer'])
+            ? Schedule::with(['course', 'lecturer'])
                 ->where('class_id', $kelas->id)
                 ->orderByRaw("FIELD(hari,'Senin','Selasa','Rabu','Kamis','Jumat','Sabtu')")
                 ->orderBy('jam_mulai')
@@ -167,8 +209,24 @@ class DashboardController extends Controller
         // Total mata kuliah diambil
         $totalMatkul = $jadwalKuliah->count();
 
+        // Mencari pertemuan hari ini yang sedang aktif (sudah dibuka)
+        $hariMap = [
+            'Monday' => 'Senin', 'Tuesday' => 'Selasa', 'Wednesday' => 'Rabu',
+            'Thursday' => 'Kamis', 'Friday' => 'Jumat', 'Saturday' => 'Sabtu', 'Sunday' => 'Minggu',
+        ];
+        $hariIni = $hariMap[$today->format('l')] ?? $today->format('l');
+
+        $activeMeetings = collect();
+        if ($kelas) {
+            $schedulesToday = Schedule::where('class_id', $kelas->id)->where('hari', $hariIni)->pluck('id');
+            $activeMeetings = ClassMeeting::with('schedule.course')
+                ->whereIn('schedule_id', $schedulesToday)
+                ->whereDate('tanggal', $today)
+                ->get();
+        }
+
         // Riwayat absensi mahasiswa (dari student_attendances)
-        $riwayatAbsensi = \App\Models\StudentAttendance::with(['meeting.schedule.course'])
+        $riwayatAbsensi = StudentAttendance::with(['meeting.schedule.course'])
             ->where('student_id', $user->id)
             ->orderByDesc('created_at')
             ->limit(20)
@@ -187,9 +245,9 @@ class DashboardController extends Controller
         $grafikData   = [];
         if ($kelas) {
             foreach ($jadwalKuliah as $jadwal) {
-                $meetingIds = \App\Models\ClassMeeting::where('schedule_id', $jadwal->id)->pluck('id');
-                $total  = \App\Models\StudentAttendance::whereIn('meeting_id', $meetingIds)->where('student_id', $user->id)->count();
-                $hadir  = \App\Models\StudentAttendance::whereIn('meeting_id', $meetingIds)->where('student_id', $user->id)->where('status', 'hadir')->count();
+                $meetingIds = ClassMeeting::where('schedule_id', $jadwal->id)->pluck('id');
+                $total  = StudentAttendance::whereIn('meeting_id', $meetingIds)->where('student_id', $user->id)->count();
+                $hadir  = StudentAttendance::whereIn('meeting_id', $meetingIds)->where('student_id', $user->id)->where('status', 'hadir')->count();
                 $grafikLabels[] = $jadwal->course->nama_matkul ?? '-';
                 $grafikData[]   = $total > 0 ? round(($hadir / $total) * 100) : 0;
             }
@@ -208,6 +266,7 @@ class DashboardController extends Controller
             'persenKehadiran' => $persenKehadiran,
             'grafikLabels'    => $grafikLabels,
             'grafikData'      => $grafikData,
+            'activeMeetings'  => $activeMeetings,
         ]);
     }
 }

@@ -1,107 +1,204 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container">
-    <div class="row justify-content-center align-items-center" style="min-height: 100vh;">
-        <div class="col-md-5">
-            <div class="card shadow-lg border-0">
-                <div class="card-header text-white" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-                    <h4 class="mb-0 text-center py-3">
-                        <i class="fas fa-clipboard-check me-2"></i> Sistem Absensi
-                    </h4>
-                </div>
-                <div class="card-body p-4">
-                    <h5 class="text-center mb-4">Login</h5>
+<style>
+    body {
+        background: #1e3c72 !important; /* Solid dark blue matching the screenshot vibe */
+    }
+    
+    .login-container {
+        min-height: 80vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 2rem 0;
+    }
 
-                    @if ($errors->any())
-                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                            <strong>Error!</strong>
-                            <ul class="mb-0 mt-2">
-                                @foreach ($errors->all() as $error)
-                                    <li>{{ $error }}</li>
-                                @endforeach
-                            </ul>
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                        </div>
-                    @endif
+    .login-card {
+        background: #ffffff;
+        border-radius: 16px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+        border: none;
+        width: 100%;
+        max-width: 440px;
+        padding: 2.5rem;
+    }
 
-                    @if (session('error'))
-                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                            {{ session('error') }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                        </div>
-                    @endif
+    .form-label {
+        font-weight: 700;
+        font-size: 0.85rem;
+        color: #7a829a;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 0.5rem;
+        display: block;
+    }
 
-                    <form action="{{ route('auth.login') }}" method="POST">
-                        @csrf
+    .form-control-custom {
+        border: 2px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 0.75rem 1rem;
+        font-size: 1rem;
+        transition: all 0.2s ease;
+        background-color: #f8fafc;
+        width: 100%;
+        display: block;
+    }
 
-                        <div class="mb-3">
-                            <label for="email" class="form-label">
-                                <i class="fas fa-envelope me-2"></i> Email
-                            </label>
-                            <input type="email" name="email" id="email" class="form-control @error('email') is-invalid @enderror" 
-                                   value="{{ old('email') }}" required autofocus>
-                            @error('email')
-                                <span class="invalid-feedback">{{ $message }}</span>
-                            @enderror
-                        </div>
+    .form-control-custom:focus {
+        border-color: #8b5cf6; /* Purple border on focus */
+        background-color: #ffffff;
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15);
+    }
 
-                        <div class="mb-3">
-                            <label for="password" class="form-label">
-                                <i class="fas fa-lock me-2"></i> Password
-                            </label>
-                            <input type="password" name="password" id="password" class="form-control @error('password') is-invalid @enderror" 
-                                   required>
-                            @error('password')
-                                <span class="invalid-feedback">{{ $message }}</span>
-                            @enderror
-                        </div>
+    .password-wrapper {
+        position: relative;
+        width: 100%;
+    }
 
-                        <div class="mb-3">
-                            <label for="role" class="form-label">
-                                <i class="fas fa-user-tag me-2"></i> Login Sebagai
-                            </label>
-                            <select name="role" id="role" class="form-select @error('role') is-invalid @enderror" required>
-                                <option value="" disabled selected>-- Pilih Role --</option>
-                                <option value="user" {{ old('role') == 'user' ? 'selected' : '' }}>Mahasiswa</option>
-                                <option value="dosen" {{ old('role') == 'dosen' ? 'selected' : '' }}>Dosen</option>
-                                <option value="admin" {{ old('role') == 'admin' ? 'selected' : '' }}>Admin</option>
-                            </select>
-                            @error('role')
-                                <span class="invalid-feedback">{{ $message }}</span>
-                            @enderror
-                        </div>
+    .password-toggle {
+        position: absolute;
+        right: 1.25rem;
+        top: 50%;
+        transform: translateY(-50%);
+        background: none;
+        border: none;
+        color: #8b5cf6;
+        font-weight: 600;
+        font-size: 0.9rem;
+        cursor: pointer;
+        padding: 0;
+        z-index: 10;
+    }
 
-                        <div class="mb-3 form-check">
-                            <input type="checkbox" name="remember" id="remember" class="form-check-input" 
-                                   {{ old('remember') ? 'checked' : '' }}>
-                            <label class="form-check-label" for="remember">
-                                Ingat saya
-                            </label>
-                        </div>
+    .password-toggle:hover {
+        color: #6d28d9;
+    }
 
-                        <button type="submit" class="btn btn-primary w-100 py-2">
-                            <i class="fas fa-sign-in-alt me-2"></i> Login
-                        </button>
-                    </form>
+    .captcha-box {
+        background-color: #f1f5f9;
+        border: 2px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 0.75rem 1rem;
+        font-weight: 600;
+        font-size: 1.05rem;
+        color: #1e293b;
+        text-align: left;
+        margin-bottom: 0.75rem;
+    }
 
-                    <hr class="my-4">
+    .lupa-password-link {
+        color: #8b5cf6;
+        font-weight: 600;
+        font-size: 0.9rem;
+        text-decoration: none;
+        float: right;
+        margin-bottom: 1.5rem;
+        transition: color 0.2s ease;
+    }
 
-                    <div class="text-center mb-3">
-                        <p class="mb-0">Belum punya akun? <a href="{{ route('auth.register') }}" class="text-decoration-none fw-bold">Daftar di sini</a></p>
-                    </div>
+    .lupa-password-link:hover {
+        color: #6d28d9;
+        text-decoration: underline;
+    }
 
-                    <div class="alert alert-info mb-0">
-                        <small>
-                            <strong>Demo Credentials:</strong><br>
-                            Email: <code>admin@example.com</code><br>
-                            Password: <code>password</code><br><br>
-                            Atau gunakan email mahasiswa: <code>budi@example.com</code>
-                        </small>
-                    </div>
+    .btn-masuk-custom {
+        background: linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%);
+        color: #ffffff;
+        font-weight: 700;
+        font-size: 1.1rem;
+        padding: 0.85rem;
+        border: none;
+        border-radius: 12px;
+        width: 100%;
+        box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+        transition: all 0.2s ease;
+        cursor: pointer;
+        display: block;
+        margin-top: 1rem;
+    }
+
+    .btn-masuk-custom:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(59, 130, 246, 0.45);
+        color: #ffffff;
+    }
+
+    .btn-masuk-custom:active {
+        transform: translateY(0);
+    }
+</style>
+
+<div class="login-container">
+    <div class="login-card">
+        <!-- Error Alerts -->
+        @if ($errors->any())
+            <div class="alert alert-danger p-3 mb-4 rounded-3" style="font-size: 0.9rem;">
+                <ul class="mb-0 ps-3">
+                    @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+
+        <form action="{{ route('auth.login.submit') }}" method="POST">
+            @csrf
+
+            <!-- NIP/NIM Field -->
+            <div class="mb-3">
+                <label for="username" class="form-label">NIP / NIM</label>
+                <input type="text" name="username" id="username" class="form-control-custom" 
+                       placeholder="Masukkan NIP Dosen / NIM Mahasiswa" value="{{ old('username') }}" required autofocus>
+            </div>
+
+            <!-- Password Field -->
+            <div class="mb-3">
+                <label for="password" class="form-label">Password</label>
+                <div class="password-wrapper">
+                    <input type="password" name="password" id="password" class="form-control-custom" 
+                           placeholder="Masukkan password" required>
+                    <button type="button" class="password-toggle" id="btnTogglePassword">Tampilkan</button>
                 </div>
             </div>
+
+            <!-- Captcha Field -->
+            <div class="mb-3">
+                <label class="form-label">Verifikasi</label>
+                <div class="captcha-box">
+                    Berapa hasil dari {{ $num1 }} + {{ $num2 }}?
+                </div>
+                <input type="number" name="captcha_answer" class="form-control-custom" placeholder="Jawaban" required>
+            </div>
+
+            <a href="#" class="lupa-password-link" onclick="alert('Silakan hubungi admin akademik untuk menyetel ulang kata sandi Anda.')">Lupa Password?</a>
+            
+            <button type="submit" class="btn-masuk-custom">
+                Masuk
+            </button>
+        </form>
+
+        <div class="text-center mt-4">
+            <span class="text-muted small">Belum punya akun? <a href="{{ route('auth.register') }}" class="fw-bold" style="color: #8b5cf6; text-decoration: none;">Daftar di sini</a></span>
         </div>
     </div>
 </div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const passwordInput = document.getElementById('password');
+        const toggleBtn = document.getElementById('btnTogglePassword');
+
+        toggleBtn.addEventListener('click', function () {
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                toggleBtn.textContent = 'Sembunyikan';
+            } else {
+                passwordInput.type = 'password';
+                toggleBtn.textContent = 'Tampilkan';
+            }
+        });
+    });
+</script>
 @endsection
