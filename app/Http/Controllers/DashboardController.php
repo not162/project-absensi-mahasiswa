@@ -187,6 +187,20 @@ class DashboardController extends Controller
                 ];
             }
 
+            $lowAttendanceWarnings = [];
+            foreach ($classAttendanceSummary as $summary) {
+                if ($summary['total_meetings'] > 0 && $summary['percentage'] < 75) {
+                    $lowAttendanceWarnings[] = "Rata-rata kehadiran kelas {$summary['course_name']} ({$summary['class_name']}) rendah: {$summary['percentage']}%.";
+                }
+            }
+
+            $dosenAttendanceStats = [
+                'hadir' => $allAttendances->where('status', 'hadir')->count(),
+                'izin' => $allAttendances->where('status', 'izin')->count(),
+                'sakit' => $allAttendances->where('status', 'sakit')->count(),
+                'tidak_hadir' => $allAttendances->where('status', 'tidak_hadir')->count(),
+            ];
+
             return view('dashboard.dosen', [
                 'totalMatkulDiampu'  => $totalMatkulDiampu,
                 'totalMahasiswa'     => $totalMahasiswa,
@@ -196,6 +210,8 @@ class DashboardController extends Controller
                 'todaySchedules'     => $todaySchedules,
                 'meetingsDone'       => $meetingsDone,
                 'classAttendanceSummary' => $classAttendanceSummary,
+                'lowAttendanceWarnings' => $lowAttendanceWarnings,
+                'dosenAttendanceStats' => $dosenAttendanceStats,
             ]);
         }
 
@@ -265,6 +281,16 @@ class DashboardController extends Controller
             }
         }
 
+        $lowAttendanceWarnings = [];
+        if ($totalAbsen > 0 && $persenKehadiran < 75) {
+            $lowAttendanceWarnings[] = "Total rata-rata kehadiran Anda berada di bawah batas aman 75% ({$persenKehadiran}%).";
+        }
+        foreach ($jadwalKuliah as $i => $jadwal) {
+            if (isset($grafikData[$i]) && $grafikData[$i] > 0 && $grafikData[$i] < 75) {
+                $lowAttendanceWarnings[] = "Kehadiran mata kuliah " . ($jadwal->course->nama_matkul ?? '-') . " di bawah 75% (" . $grafikData[$i] . "%).";
+            }
+        }
+
         return view('dashboard.user', [
             'user'            => $user,
             'kelas'           => $kelas,
@@ -279,6 +305,7 @@ class DashboardController extends Controller
             'grafikLabels'    => $grafikLabels,
             'grafikData'      => $grafikData,
             'activeMeetings'  => $activeMeetings,
+            'lowAttendanceWarnings' => $lowAttendanceWarnings,
         ]);
     }
 

@@ -25,6 +25,18 @@
         </div>
     @endif
 
+    @if(isset($lowAttendanceWarnings) && count($lowAttendanceWarnings) > 0)
+        <div class="alert alert-danger alert-dismissible fade show shadow-sm">
+            <h6 class="fw-bold mb-1"><i class="fas fa-exclamation-circle me-2"></i>Peringatan Kehadiran (< 75%)</h6>
+            <ul class="mb-0 ps-3">
+                @foreach($lowAttendanceWarnings as $warning)
+                    <li>{{ $warning }}</li>
+                @endforeach
+            </ul>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    @endif
+
     {{-- Widget Absen Cepat (Menampilkan kelas aktif hari ini) --}}
     @if(isset($activeMeetings) && $activeMeetings->count() > 0)
         <div class="row mb-4">

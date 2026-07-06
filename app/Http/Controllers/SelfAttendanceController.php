@@ -86,6 +86,7 @@ class SelfAttendanceController extends Controller
             'status'      => 'required|in:hadir,izin,sakit,tidak_hadir',
             'latitude'    => 'nullable|numeric',
             'longitude'   => 'nullable|numeric',
+            'file_bukti'  => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
         ]);
 
         $user     = Auth::user();
@@ -111,10 +112,16 @@ class SelfAttendanceController extends Controller
                 // Simpan lokasi jika tersedia (opsional)
             }
         }
+        
+        $data = ['status' => $request->status];
+        if ($request->hasFile('file_bukti') && in_array($request->status, ['izin', 'sakit'])) {
+            $path = $request->file('file_bukti')->store('bukti_izin', 'public');
+            $data['file_bukti'] = $path;
+        }
 
         StudentAttendance::updateOrCreate(
             ['meeting_id' => $meeting->id, 'student_id' => $user->id],
-            ['status' => $request->status]
+            $data
         );
 
         return redirect()->back()->with('success', 'Kehadiran berhasil dicatat.');

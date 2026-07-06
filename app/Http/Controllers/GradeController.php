@@ -94,4 +94,19 @@ class GradeController extends Controller
 
         return view('mahasiswa.grades', compact('grades'));
     }
+
+    /** Mahasiswa: cetak KHS PDF */
+    public function exportPdf()
+    {
+        $user = Auth::user();
+
+        $grades = Grade::with(['course'])
+            ->where('user_id', $user->id)
+            ->get()
+            ->sortBy(fn($g) => $g->course->semester ?? 0);
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.khs', compact('grades', 'user'));
+        
+        return $pdf->download('KHS_' . ($user->nim ?? 'NIM') . '_' . str_replace(' ', '_', $user->name) . '.pdf');
+    }
 }

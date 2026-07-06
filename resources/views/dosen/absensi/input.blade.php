@@ -89,6 +89,14 @@
                                         </div>
                                         @endforeach
                                     </div>
+                                    @php $attModel = $existing->get($mhs->id); @endphp
+                                    @if($attModel && $attModel->file_bukti)
+                                        <div class="mt-2 text-start">
+                                            <a href="{{ asset('storage/'.$attModel->file_bukti) }}" target="_blank" class="small badge bg-info text-decoration-none text-dark">
+                                                <i class="fas fa-file-image me-1"></i>Lihat Bukti
+                                            </a>
+                                        </div>
+                                    @endif
                                 </td>
                             </tr>
                             @empty

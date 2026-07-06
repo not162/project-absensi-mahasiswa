@@ -14,7 +14,7 @@ class User extends Authenticatable
 
    protected $fillable = [
     'name', 'email', 'nim', 'phone', 'role',
-    'password', 'department_id', 'kode_dosen', 'class_id'
+    'password', 'department_id', 'kode_dosen', 'class_id', 'photo'
 ];
 
 public function kelas()

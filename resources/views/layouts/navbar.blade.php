@@ -29,16 +29,22 @@
                 </li>
                 @auth
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle text-white fw-bold" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
-                            <i class="fas fa-user-circle me-1"></i> {{ auth()->user()->name }}
+                        <a class="nav-link dropdown-toggle text-white fw-bold d-flex align-items-center gap-2" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
+                            @if(auth()->user()->photo)
+                                <img src="{{ asset('storage/'.auth()->user()->photo) }}" class="rounded-circle" style="width: 30px; height: 30px; object-fit: cover; border: 2px solid white;">
+                            @else
+                                <i class="fas fa-user-circle"></i>
+                            @endif
+                            {{ auth()->user()->name }}
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
-                            <li><a class="dropdown-item" href="{{ route('dashboard') }}">Dashboard</a></li>
+                            <li><a class="dropdown-item" href="{{ route('dashboard') }}"><i class="fas fa-tachometer-alt me-2 text-primary"></i>Dashboard</a></li>
+                            <li><a class="dropdown-item" href="{{ route('profile.show') }}"><i class="fas fa-user-circle me-2 text-primary"></i>Profil Saya</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li>
                                 <form method="POST" action="{{ route('logout') }}">
                                     @csrf
-                                    <button class="dropdown-item" type="submit">Logout</button>
+                                    <button class="dropdown-item text-danger" type="submit"><i class="fas fa-sign-out-alt me-2"></i>Logout</button>
                                 </form>
                             </li>
                         </ul>
@@ -63,14 +69,24 @@
         <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
     </div>
     <div class="offcanvas-body py-4 px-3">
-        <div class="mb-3 px-2">
-            <small class="text-muted text-uppercase d-block mb-1">Peran Anda</small>
-            <span class="badge bg-primary text-capitalize px-3 py-2 fw-semibold">{{ auth()->user()->role }}</span>
+        <div class="d-flex align-items-center gap-3 mb-4 px-2">
+            @if(auth()->user()->photo)
+                <img src="{{ asset('storage/'.auth()->user()->photo) }}" class="rounded-circle shadow-sm" style="width: 55px; height: 55px; object-fit: cover; border: 2px solid var(--bs-primary);">
+            @else
+                <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold shadow-sm" style="width: 55px; height: 55px; font-size: 22px;">
+                    {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
+                </div>
+            @endif
+            <div>
+                <h6 class="fw-bold mb-0 text-dark" style="font-size: 15px;">{{ auth()->user()->name }}</h6>
+                <span class="badge bg-primary text-capitalize fw-semibold mt-1" style="font-size: 10px;">{{ auth()->user()->role }}</span>
+            </div>
         </div>
         <hr class="my-2">
         <ul class="nav flex-column gap-1">
             @if(auth()->user()->role === 'admin')
                 <li class="nav-item"><a class="nav-link text-dark py-2 px-3 rounded d-flex align-items-center gap-2 hover-bg" href="{{ route('dashboard') }}"><i class="fas fa-home text-primary w-20"></i> Dashboard</a></li>
+                <li class="nav-item"><a class="nav-link text-dark py-2 px-3 rounded d-flex align-items-center gap-2 hover-bg" href="{{ route('profile.show') }}"><i class="fas fa-user-circle text-primary w-20"></i> Profil Saya</a></li>
                 <li class="nav-item"><a class="nav-link text-dark py-2 px-3 rounded d-flex align-items-center gap-2 hover-bg" href="{{ route('akademik.index') }}"><i class="fas fa-layer-group text-primary w-20"></i> Semester & Kelas</a></li>
                 <li class="nav-item"><a class="nav-link text-dark py-2 px-3 rounded d-flex align-items-center gap-2 hover-bg" href="{{ route('attendance.index') }}"><i class="fas fa-clipboard-list text-primary w-20"></i> Absensi</a></li>
                 <li class="nav-item"><a class="nav-link text-dark py-2 px-3 rounded d-flex align-items-center gap-2 hover-bg" href="{{ route('users.index') }}"><i class="fas fa-users text-primary w-20"></i> Mahasiswa</a></li>
@@ -85,6 +101,7 @@
                 <li class="nav-item"><a class="nav-link text-dark py-2 px-3 rounded d-flex align-items-center gap-2 hover-bg" href="{{ route('absensi.rekapAdmin') }}"><i class="fas fa-chart-bar text-primary w-20"></i> Rekap Kehadiran Mahasiswa</a></li>
             @elseif(auth()->user()->role === 'dosen')
                 <li class="nav-item"><a class="nav-link text-dark py-2 px-3 rounded d-flex align-items-center gap-2 hover-bg" href="{{ route('dashboard') }}"><i class="fas fa-home text-success w-20"></i> Dashboard</a></li>
+                <li class="nav-item"><a class="nav-link text-dark py-2 px-3 rounded d-flex align-items-center gap-2 hover-bg" href="{{ route('profile.show') }}"><i class="fas fa-user-circle text-success w-20"></i> Profil Saya</a></li>
                 <li class="nav-item"><a class="nav-link text-dark py-2 px-3 rounded d-flex align-items-center gap-2 hover-bg" href="{{ route('schedules.byDosen', auth()->user()) }}"><i class="fas fa-calendar text-success w-20"></i> Jadwal Mengajar</a></li>
                 <li class="nav-item"><a class="nav-link text-dark py-2 px-3 rounded d-flex align-items-center gap-2 hover-bg" href="{{ route('absensi.rekap') }}"><i class="fas fa-clipboard-check text-success w-20"></i> Rekap Kehadiran</a></li>
                 <li class="nav-item"><a class="nav-link text-dark py-2 px-3 rounded d-flex align-items-center gap-2 hover-bg" href="{{ route('exam.mySupervisions') }}"><i class="fas fa-user-shield text-success w-20"></i> Jadwal Mengawas</a></li>
@@ -92,7 +109,7 @@
                 <li class="nav-item"><a class="nav-link text-dark py-2 px-3 rounded d-flex align-items-center gap-2 hover-bg" href="{{ route('schedules.index') }}"><i class="fas fa-calendar-alt text-success w-20"></i> Kelola Jadwal</a></li>
             @else
                 <li class="nav-item"><a class="nav-link text-dark py-2 px-3 rounded d-flex align-items-center gap-2 hover-bg" href="{{ route('dashboard') }}"><i class="fas fa-home text-info w-20"></i> Dashboard</a></li>
-                <li class="nav-item"><a class="nav-link text-dark py-2 px-3 rounded d-flex align-items-center gap-2 hover-bg" href="{{ route('profile.show') }}"><i class="fas fa-user-circle text-info w-20"></i> Profile Mahasiswa</a></li>
+                <li class="nav-item"><a class="nav-link text-dark py-2 px-3 rounded d-flex align-items-center gap-2 hover-bg" href="{{ route('profile.show') }}"><i class="fas fa-user-circle text-info w-20"></i> Profil Saya</a></li>
                 <li class="nav-item"><a class="nav-link text-dark py-2 px-3 rounded d-flex align-items-center gap-2 hover-bg" href="{{ route('exam.index', ['tipe' => 'uts']) }}"><i class="fas fa-file-alt text-info w-20"></i> Ujian</a></li>
                 <li class="nav-item"><a class="nav-link text-dark py-2 px-3 rounded d-flex align-items-center gap-2 hover-bg" href="{{ route('mahasiswa.toefl') }}"><i class="fas fa-language text-info w-20"></i> Ujian TOEFL/IELTS</a></li>
                 <li class="nav-item"><a class="nav-link text-dark py-2 px-3 rounded d-flex align-items-center gap-2 hover-bg" href="{{ route('exam.replacement.index') }}"><i class="fas fa-file-invoice text-info w-20"></i> Ujian Pengganti</a></li>

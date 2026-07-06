@@ -16,6 +16,18 @@
         </div>
     @endif
 
+    @if(isset($lowAttendanceWarnings) && count($lowAttendanceWarnings) > 0)
+        <div class="alert alert-danger alert-dismissible fade show">
+            <h6 class="fw-bold mb-1"><i class="fas fa-exclamation-triangle me-2"></i>Peringatan Kehadiran Rendah (< 75%)</h6>
+            <ul class="mb-0 ps-3">
+                @foreach($lowAttendanceWarnings as $warning)
+                    <li>{{ $warning }}</li>
+                @endforeach
+            </ul>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    @endif
+
     {{-- Kartu Statistik --}}
     <div class="row g-3 mb-4">
         <div class="col-6 col-md-3">
@@ -210,10 +222,56 @@
                         </div>
                         @endforelse
                     </div>
+
+                    @if(array_sum($dosenAttendanceStats ?? []) > 0)
+                    <div class="mt-4 pt-3 border-top">
+                        <h6 class="fw-bold text-center mb-3">Total Komposisi Kehadiran</h6>
+                        <canvas id="dosenPieChart" height="250"></canvas>
+                    </div>
+                    @endif
                 </div>
             </div>
         </div>
     </div>
 
 </div>
+
+@if(array_sum($dosenAttendanceStats ?? []) > 0)
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const ctx = document.getElementById('dosenPieChart');
+        if (ctx) {
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Hadir', 'Izin', 'Sakit', 'Alpha/Tidak Hadir'],
+                    datasets: [{
+                        data: [
+                            {{ $dosenAttendanceStats['hadir'] }},
+                            {{ $dosenAttendanceStats['izin'] }},
+                            {{ $dosenAttendanceStats['sakit'] }},
+                            {{ $dosenAttendanceStats['tidak_hadir'] }}
+                        ],
+                        backgroundColor: [
+                            'rgba(40, 167, 69, 0.8)',
+                            'rgba(255, 193, 7, 0.8)',
+                            'rgba(23, 162, 184, 0.8)',
+                            'rgba(220, 53, 69, 0.8)'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom' }
+                    }
+                }
+            });
+        }
+    });
+</script>
+@endif
+
 @endsection

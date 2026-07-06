@@ -21,6 +21,11 @@ Sistem informasi akademik berbasis web full-stack yang dirancang untuk memfasili
 | 8 | **Rekap Absensi** | Rekapitulasi kehadiran per mahasiswa, per kelas, dan per mata kuliah |
 | 9 | **LMS Modul Pembelajaran** | Dosen dapat mengelola modul pembelajaran digital |
 | 10 | **Export PDF & Import Excel** | Data mahasiswa dapat di-export ke PDF dan di-import dari CSV/Excel |
+| 11 | **Pengajuan Izin & Sakit (Upload Bukti)** | Mahasiswa mengunggah surat keterangan/bukti saat izin/sakit untuk ditinjau oleh Dosen |
+| 12 | **Early Warning System Kehadiran** | Alert otomatis jika tingkat kehadiran mahasiswa/rata-rata kelas di bawah 75% |
+| 13 | **Dashboard Analytics (Chart.js)** | Visualisasi grafik doughnut interaktif mengenai komposisi kehadiran di Dashboard Dosen |
+| 14 | **Cetak KHS PDF** | Ekspor Kartu Hasil Studi (KHS) resmi berformat PDF dengan kop surat universitas |
+| 15 | **CRUD Foto Profil Peran** | Manajemen (upload, preview, delete) foto profil secara andal untuk Admin, Dosen, dan Mahasiswa |
 
 ---
 

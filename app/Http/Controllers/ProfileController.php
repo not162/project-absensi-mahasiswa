@@ -39,10 +39,7 @@ class ProfileController extends Controller
         // Handle photo deletion request
         if ($request->delete_photo == '1') {
             if ($user->photo) {
-                $oldPath = public_path('storage/' . $user->photo);
-                if (file_exists($oldPath)) {
-                    unlink($oldPath);
-                }
+                Storage::disk('public')->delete($user->photo);
                 $data['photo'] = null;
                 $user->photo = null;
             }
@@ -51,10 +48,7 @@ class ProfileController extends Controller
         if ($request->hasFile('photo')) {
             // Delete old photo if exists
             if ($user->photo) {
-                $oldPath = public_path('storage/' . $user->photo);
-                if (file_exists($oldPath)) {
-                    unlink($oldPath);
-                }
+                Storage::disk('public')->delete($user->photo);
             }
             $path = $request->file('photo')->store('photos', 'public');
             $data['photo'] = $path;

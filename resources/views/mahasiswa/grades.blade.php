@@ -2,7 +2,12 @@
 
 @section('content')
 <div class="container py-4">
-    <h2 class="fw-bold mb-4"><i class="fas fa-star text-warning me-2"></i>Nilai Saya</h2>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold mb-0"><i class="fas fa-star text-warning me-2"></i>Nilai Saya</h2>
+        <a href="{{ route('grades.my.pdf') }}" class="btn btn-primary shadow-sm" target="_blank">
+            <i class="fas fa-file-pdf me-2"></i>Cetak KHS
+        </a>
+    </div>
 
     <div class="card shadow-sm">
         <div class="card-body p-0">

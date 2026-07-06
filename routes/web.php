@@ -178,6 +178,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/self-checkin', [SelfAttendanceController::class, 'checkIn'])->name('mahasiswa.checkin');
         
         Route::get('/my-grades', [GradeController::class, 'myGrades'])->name('grades.my');
+        Route::get('/my-grades/pdf', [GradeController::class, 'exportPdf'])->name('grades.my.pdf');
         
         // Repeat Course Routes
         Route::get('/repeats', [App\Http\Controllers\CourseRepeatController::class, 'index'])->name('repeats.my');

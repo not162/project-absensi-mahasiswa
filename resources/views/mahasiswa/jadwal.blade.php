@@ -195,30 +195,58 @@
                             </div>
                             <div>
                                 @if(!$myStatus)
-                                    <form action="{{ route('mahasiswa.checkin') }}" method="POST" class="d-inline">
+                                    <form action="{{ route('mahasiswa.checkin') }}" method="POST" class="d-inline" enctype="multipart/form-data">
                                         @csrf
                                         <input type="hidden" name="schedule_id" value="{{ $schedule->id }}">
-                                        <input type="hidden" name="status" class="status-input" value="hadir">
-                                        <button type="button" onclick="openCheckinModal({{ $schedule->id }})" class="btn btn-success px-4 fw-bold me-2">
-                                            <i class="fas fa-check me-1"></i> Hadir
-                                        </button>
-                                        <button type="submit" onclick="this.form.querySelector('.status-input').value='tidak_hadir'" class="btn btn-danger px-4 fw-bold">
-                                            <i class="fas fa-times me-1"></i> Tidak Hadir
-                                        </button>
+                                        <input type="hidden" name="status" id="initial-status-{{ $schedule->id }}" value="hadir">
+                                        
+                                        <div class="d-flex gap-2 mb-2">
+                                            <button type="button" onclick="openCheckinModal({{ $schedule->id }})" class="btn btn-success px-4 fw-bold flex-grow-1">
+                                                <i class="fas fa-check me-1"></i> Hadir
+                                            </button>
+                                            <button type="button" onclick="document.getElementById('izin-sakit-form-{{ $schedule->id }}').style.display = 'block'; this.style.display='none'; document.getElementById('initial-status-{{ $schedule->id }}').value = 'tidak_hadir';" class="btn btn-outline-secondary px-3">
+                                                Izin / Sakit
+                                            </button>
+                                        </div>
+                                        
+                                        <div id="izin-sakit-form-{{ $schedule->id }}" style="display: none;" class="border p-3 rounded bg-light mt-2 text-start">
+                                            <label class="small fw-bold mb-1">Pilih Status Absen:</label>
+                                            <select name="status_temp" class="form-select form-select-sm mb-2" onchange="document.getElementById('initial-status-{{ $schedule->id }}').value = this.value; if(this.value === 'izin' || this.value === 'sakit') { document.getElementById('initial-file-group-{{ $schedule->id }}').style.display = 'block'; } else { document.getElementById('initial-file-group-{{ $schedule->id }}').style.display = 'none'; }">
+                                                <option value="tidak_hadir">Tidak Hadir</option>
+                                                <option value="izin">Izin</option>
+                                                <option value="sakit">Sakit</option>
+                                            </select>
+                                            <div id="initial-file-group-{{ $schedule->id }}" style="display: none;" class="mb-2">
+                                                <label class="small fw-bold mb-1">Upload Bukti (Surat Dokter/Izin):</label>
+                                                <input type="file" name="file_bukti" class="form-control form-control-sm" accept=".pdf,.jpg,.jpeg,.png">
+                                            </div>
+                                            <button type="submit" class="btn btn-primary btn-sm w-100">Simpan Absen</button>
+                                        </div>
                                     </form>
                                 @else
-                                    <form action="{{ route('mahasiswa.checkin') }}" method="POST" class="d-inline" onsubmit="return handleUpdateCheckin(event, this, {{ $schedule->id }})">
+                                    <form action="{{ route('mahasiswa.checkin') }}" method="POST" class="d-inline" onsubmit="return handleUpdateCheckin(event, this, {{ $schedule->id }})" enctype="multipart/form-data">
                                         @csrf
                                         <input type="hidden" name="schedule_id" value="{{ $schedule->id }}">
                                         <input type="hidden" name="latitude" class="lat-input">
                                         <input type="hidden" name="longitude" class="lng-input">
-                                        <div class="d-flex gap-2 align-items-center">
-                                            <select name="status" class="form-select form-select-sm w-auto" id="status-select-{{ $schedule->id }}">
-                                                @foreach(['hadir'=>'Hadir','izin'=>'Izin','sakit'=>'Sakit','tidak_hadir'=>'Tidak Hadir'] as $val=>$label)
-                                                <option value="{{ $val }}" @selected($myStatus===$val)>{{ $label }}</option>
-                                                @endforeach
-                                            </select>
-                                            <button type="submit" class="btn btn-sm btn-outline-primary">Perbarui Status</button>
+                                        <div class="d-flex flex-column gap-2 text-start">
+                                            <div class="d-flex gap-2 align-items-center">
+                                                <select name="status" class="form-select form-select-sm w-auto" id="status-select-{{ $schedule->id }}" onchange="toggleFileBukti(this, {{ $schedule->id }})">
+                                                    @foreach(['hadir'=>'Hadir','izin'=>'Izin','sakit'=>'Sakit','tidak_hadir'=>'Tidak Hadir'] as $val=>$label)
+                                                    <option value="{{ $val }}" @selected($myStatus===$val)>{{ $label }}</option>
+                                                    @endforeach
+                                                </select>
+                                                <input type="file" name="file_bukti" class="form-control form-control-sm w-auto" id="file-bukti-{{ $schedule->id }}" style="display: {{ in_array($myStatus, ['izin', 'sakit']) ? 'inline-block' : 'none' }}; max-width: 200px;" accept=".pdf,.jpg,.jpeg,.png">
+                                                <button type="submit" class="btn btn-sm btn-outline-primary">Perbarui</button>
+                                            </div>
+                                            @if(in_array($myStatus, ['izin', 'sakit']))
+                                                @php $att = \App\Models\StudentAttendance::where('meeting_id', $meeting->id)->where('student_id', $user->id)->first(); @endphp
+                                                @if($att && $att->file_bukti)
+                                                    <div>
+                                                        <a href="{{ asset('storage/'.$att->file_bukti) }}" target="_blank" class="small"><i class="fas fa-file-image me-1"></i>Lihat Bukti Terunggah</a>
+                                                    </div>
+                                                @endif
+                                            @endif
                                         </div>
                                     </form>
                                 @endif
@@ -486,6 +514,17 @@
             return false;
         }
         return true; // Proceed with normal submit for non-hadir
+    }
+
+    function toggleFileBukti(selectEl, scheduleId) {
+        const fileInput = document.getElementById('file-bukti-' + scheduleId);
+        if (fileInput) {
+            if (selectEl.value === 'izin' || selectEl.value === 'sakit') {
+                fileInput.style.display = 'inline-block';
+            } else {
+                fileInput.style.display = 'none';
+            }
+        }
     }
 
     function calculateDistance(lat1, lon1, lat2, lon2) {
