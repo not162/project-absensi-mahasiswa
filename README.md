@@ -534,6 +534,6 @@ Project ini dibuat untuk keperluan akademik di **Universitas Pamulang**.
 ---
 
 <p align="center">
-  <b>Dibuat dengan ❤️ menggunakan Laravel</b><br>
+  <b>Dibuat dengan Ridwan & dkk. menggunakan Laravel</b><br>
   <sub>Sistem Absensi & Manajemen Akademik Real-Time</sub>
 </p>
