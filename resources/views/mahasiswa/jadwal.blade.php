@@ -382,8 +382,8 @@
     let checkinModalObj = null;
     let currentAbsenDarimanaSaja = false;
 
-    const CAMPUS_LAT = {{ env('CAMPUS_LATITUDE', -6.175392) }};
-    const CAMPUS_LNG = {{ env('CAMPUS_LONGITUDE', 106.827153) }};
+    const CAMPUS_LAT = {{ env('CAMPUS_LATITUDE', -6.3428) }};
+    const CAMPUS_LNG = {{ env('CAMPUS_LONGITUDE', 106.7383) }};
 
     function openCheckinModal(scheduleId) {
         document.getElementById('modal-schedule-id').value = scheduleId;

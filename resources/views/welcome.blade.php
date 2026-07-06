@@ -316,6 +316,7 @@
                 </div>
                 <div class="col-lg-4 text-lg-center">
                     <h5 class="fw-bold mb-3">Hubungi Kami</h5>
+                    <p class="text-white-50 mb-1"><i class="fas fa-map-marker-alt me-2 text-info"></i> Jl. Suryakencana No.1, Pamulang</p>
                     <p class="text-white-50 mb-1"><i class="fas fa-envelope me-2"></i> support@kampus.ac.id</p>
                     <p class="text-white-50 mb-3"><i class="fas fa-phone me-2"></i> +62 21-12345678</p>
                 </div>
@@ -341,8 +342,8 @@
         document.addEventListener("DOMContentLoaded", function() {
             const publicMapEl = document.getElementById('public-map');
             if (publicMapEl) {
-                const campusLat = {{ env('CAMPUS_LATITUDE', -6.175392) }};
-                const campusLng = {{ env('CAMPUS_LONGITUDE', 106.827153) }};
+                const campusLat = {{ env('CAMPUS_LATITUDE', -6.3428) }};
+                const campusLng = {{ env('CAMPUS_LONGITUDE', 106.7383) }};
                 
                 const publicMap = L.map('public-map', {
                     zoomControl: true,

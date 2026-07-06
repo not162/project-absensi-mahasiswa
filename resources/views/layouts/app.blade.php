@@ -242,7 +242,7 @@
                                 <div class="d-flex align-items-center justify-content-center justify-content-md-end gap-3">
                                     <div class="text-md-end text-center">
                                         <small class="text-muted d-block">Alamat Kampus Utama</small>
-                                        <small class="fw-bold text-dark">Jl. Raya Puspiptek, Kota Tangerang Selatan</small>
+                                        <small class="fw-bold text-dark">Jl. Suryakencana No.1, Pamulang Bar., Kec. Pamulang, Kota Tangerang Selatan, Banten 15417</small>
                                     </div>
                                     <div id="footer-map" class="border rounded-3 shadow-sm" style="width: 140px; height: 80px; z-index: 1;"></div>
                                 </div>
@@ -409,11 +409,11 @@
                 const footerMap = L.map('footer-map', {
                     zoomControl: false,
                     attributionControl: false
-                }).setView([{{ env('CAMPUS_LATITUDE', -6.175392) }}, {{ env('CAMPUS_LONGITUDE', 106.827153) }}], 14);
+                }).setView([{{ env('CAMPUS_LATITUDE', -6.3428) }}, {{ env('CAMPUS_LONGITUDE', 106.7383) }}], 14);
                 
                 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(footerMap);
                 
-                L.marker([{{ env('CAMPUS_LATITUDE', -6.175392) }}, {{ env('CAMPUS_LONGITUDE', 106.827153) }}]).addTo(footerMap)
+                L.marker([{{ env('CAMPUS_LATITUDE', -6.3428) }}, {{ env('CAMPUS_LONGITUDE', 106.7383) }}]).addTo(footerMap)
                     .bindPopup('<b>Univ Tangsel Raya</b>');
             }
         });
