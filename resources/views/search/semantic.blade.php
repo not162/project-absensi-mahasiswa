@@ -114,6 +114,55 @@
             @endforelse
         </div>
     @endif
+
+    {{-- Recommended Courses Section --}}
+    @if(!$query)
+        <div class="mb-4">
+            <h4 class="fw-bold text-dark mb-1">
+                <i class="fas fa-brain text-primary me-2"></i>Rekomendasi Mata Kuliah Pintar Anda
+            </h4>
+            <p class="text-muted small">
+                Mata kuliah yang disarankan berdasarkan program studi Anda. Klik salah satu kartu untuk mencari secara instan!
+            </p>
+        </div>
+        
+        <div class="row g-4">
+            @forelse($recommendedCourses as $res)
+                <div class="col-md-6 col-lg-4">
+                    <div class="card border-0 shadow-sm h-100 course-result-card transition-all" style="cursor: pointer;" onclick="setSearchQuery('{{ $res->nama_matkul }}')">
+                        <div class="card-body p-4 d-flex flex-column justify-content-between">
+                            <div>
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <span class="badge bg-light text-dark border px-2 py-1 font-monospace">
+                                        {{ $res->kode_matkul }}
+                                    </span>
+                                    <span class="badge bg-primary bg-opacity-10 text-primary px-2 py-1 small">
+                                        Recommended
+                                    </span>
+                                </div>
+                                <h5 class="fw-bold text-dark mb-2 course-title">{{ $res->nama_matkul }}</h5>
+                                <p class="text-muted text-xs mb-3 text-truncate" title="{{ $res->deskripsi ?? 'Tidak ada deskripsi.' }}">
+                                    {{ $res->deskripsi ?? 'Tidak ada deskripsi mata kuliah.' }}
+                                </p>
+                            </div>
+                            <div class="border-top pt-3 mt-3 d-flex justify-content-between align-items-center">
+                                <span class="text-xs text-muted">
+                                    <i class="far fa-file-alt me-1"></i> {{ $res->sks }} SKS
+                                </span>
+                                <span class="text-xs text-muted">
+                                    <i class="far fa-calendar-alt me-1"></i> Semester {{ $res->semester }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            @empty
+                <div class="col-12 text-center text-muted py-4">
+                    Belum ada mata kuliah yang direkomendasikan.
+                </div>
+            @endforelse
+        </div>
+    @endif
 </div>
 
 <style>

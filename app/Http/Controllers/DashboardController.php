@@ -357,6 +357,9 @@ class DashboardController extends Controller
         $query = $request->get('query', '');
         $results = [];
 
+        $user = Auth::user();
+        $recommendedCourses = collect();
+
         if ($query) {
             $courses = Course::with('department')->get()->map(function ($c) {
                 return [
@@ -371,9 +374,22 @@ class DashboardController extends Controller
             })->toArray();
 
             $results = $vectorSearch->search($query, $courses, 5);
+        } else {
+            // Load recommended courses based on user study program
+            if ($user && $user->department_id) {
+                $recommendedCourses = Course::with('department')
+                    ->where('department_id', $user->department_id)
+                    ->orderBy('semester')
+                    ->limit(6)
+                    ->get();
+            } else {
+                $recommendedCourses = Course::with('department')
+                    ->limit(6)
+                    ->get();
+            }
         }
 
-        return view('search.semantic', compact('query', 'results'));
+        return view('search.semantic', compact('query', 'results', 'recommendedCourses'));
     }
 
     /** Update Dosen custom AI Context/Note for a Class */
