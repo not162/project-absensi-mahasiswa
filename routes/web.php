@@ -206,6 +206,10 @@ Route::middleware('auth')->group(function () {
         Route::post('/exam-replacements', [ExamReplacementController::class, 'store'])->name('exam.replacement.store');
         Route::post('/attendance/feedback', [SelfAttendanceController::class, 'storeFeedback'])->name('mahasiswa.attendance.feedback');
         Route::get('/mahasiswa/rekap-absen', [SelfAttendanceController::class, 'rekapAbsen'])->name('mahasiswa.rekap_absen');
+
+        // MyUniv AI Chatbot & Analytics
+        Route::get('/myuniv-ai', [App\Http\Controllers\MyUnivAIController::class, 'index'])->name('myuniv.ai');
+        Route::post('/myuniv-ai/chat', [App\Http\Controllers\MyUnivAIController::class, 'chat'])->name('myuniv.ai.chat');
     });
 
     // ──────────────────────────────────────────────────────────

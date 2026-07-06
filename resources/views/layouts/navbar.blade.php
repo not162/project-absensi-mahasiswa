@@ -110,6 +110,7 @@
             @else
                 <li class="nav-item"><a class="nav-link text-dark py-2 px-3 rounded d-flex align-items-center gap-2 hover-bg" href="{{ route('dashboard') }}"><i class="fas fa-home text-info w-20"></i> Dashboard</a></li>
                 <li class="nav-item"><a class="nav-link text-dark py-2 px-3 rounded d-flex align-items-center gap-2 hover-bg" href="{{ route('profile.show') }}"><i class="fas fa-user-circle text-info w-20"></i> Profil Saya</a></li>
+                <li class="nav-item"><a class="nav-link text-dark py-2 px-3 rounded d-flex align-items-center gap-2 hover-bg" href="{{ route('myuniv.ai') }}"><i class="fas fa-brain text-info w-20"></i> MyUniv AI Advisor</a></li>
                 <li class="nav-item"><a class="nav-link text-dark py-2 px-3 rounded d-flex align-items-center gap-2 hover-bg" href="{{ route('exam.index', ['tipe' => 'uts']) }}"><i class="fas fa-file-alt text-info w-20"></i> Ujian</a></li>
                 <li class="nav-item"><a class="nav-link text-dark py-2 px-3 rounded d-flex align-items-center gap-2 hover-bg" href="{{ route('mahasiswa.toefl') }}"><i class="fas fa-language text-info w-20"></i> Ujian TOEFL/IELTS</a></li>
                 <li class="nav-item"><a class="nav-link text-dark py-2 px-3 rounded d-flex align-items-center gap-2 hover-bg" href="{{ route('exam.replacement.index') }}"><i class="fas fa-file-invoice text-info w-20"></i> Ujian Pengganti</a></li>
