@@ -9,9 +9,9 @@
         <div>
             <h2 class="fw-bold mb-0">Input Absensi</h2>
             <small class="text-muted">
-                {{ $schedule->course->nama_matkul ?? '-' }} &mdash;
-                {{ $schedule->kelas->department->name ?? '-' }} &mdash;
-                Kelas {{ $schedule->kelas->nomor_kelas ?? '-' }} &mdash;
+                {{ $schedule->course->nama_matkul ?? '-' }} |
+                {{ $schedule->kelas->department->name ?? '-' }} |
+                Kelas {{ $schedule->kelas->nomor_kelas ?? '-' }} |
                 Pertemuan ke-{{ $meeting->pertemuan_ke }}
             </small>
         </div>

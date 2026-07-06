@@ -5,7 +5,7 @@
     <div class="mb-4 d-flex justify-content-between align-items-center">
         <div>
             <h2 class="fw-bold mb-0 text-dark"><i class="fas fa-file-signature text-primary me-2"></i>Persetujuan Ujian Pengganti</h2>
-            <p class="text-muted">Universitas Tangsel Raya &mdash; Kelola pengajuan ujian susulan/pengganti dari mahasiswa.</p>
+            <p class="text-muted">Universitas Tangsel Raya | Kelola pengajuan ujian susulan/pengganti dari mahasiswa.</p>
         </div>
         <div>
             <div class="btn-group">

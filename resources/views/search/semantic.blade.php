@@ -4,7 +4,7 @@
 <div class="container-fluid py-4">
     <div class="mb-4">
         <h2 class="fw-bold mb-0 text-dark"><i class="fas fa-search-plus text-primary me-2"></i>Pencarian Semantik Matakuliah</h2>
-        <p class="text-muted">Universitas Tangsel Raya &mdash; Temukan mata kuliah secara pintar menggunakan pencarian berbasis kemiripan vektor teks (Cosine Similarity).</p>
+        <p class="text-muted">Universitas Tangsel Raya | Temukan mata kuliah secara pintar menggunakan pencarian berbasis kemiripan vektor teks (Cosine Similarity).</p>
     </div>
 
     <div class="card border-0 shadow-sm mb-4">
