@@ -143,18 +143,13 @@
             <p class="text-muted mb-0">Daftar kelas perkuliahan aktif berdasarkan program studi.</p>
         </div>
         
-        <!-- Program Studi Filter -->
+        <!-- Program Studi (Read-Only) -->
         <div class="mt-3 mt-md-0" style="min-width: 250px;">
-            <form action="{{ route('mahasiswa.jadwal_kelas') }}" method="GET" id="filterForm">
-                <label class="form-label text-muted small fw-bold">Pilih Program Studi</label>
-                <select name="department_id" class="form-select" onchange="document.getElementById('filterForm').submit()">
-                    @foreach($departments as $dept)
-                        <option value="{{ $dept->id }}" @selected($selectedDeptId == $dept->id)>
-                            {{ $dept->name }}
-                        </option>
-                    @endforeach
-                </select>
-            </form>
+            <label class="form-label text-muted small fw-bold">Program Studi Terdaftar</label>
+            <div class="form-control bg-light fw-bold text-dark border-secondary-subtle py-2 d-flex align-items-center gap-2">
+                <i class="fas fa-university text-primary"></i> 
+                <span>{{ $user->department->name ?? '-' }}</span>
+            </div>
         </div>
     </div>
 

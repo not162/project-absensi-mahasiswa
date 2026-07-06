@@ -314,16 +314,17 @@ class SelfAttendanceController extends Controller
     public function jadwalKelas(Request $request)
     {
         $user = Auth::user();
-        $departments = \App\Models\Department::all();
         
-        // Pilih prodi yang akan ditampilkan, default prodi mahasiswa itu sendiri
-        $selectedDeptId = $request->get('department_id', $user->department_id ?? $departments->first()?->id);
+        // Mahasiswa strictly sees their own registered program study (department)
+        $selectedDeptId = $user->department_id;
         
         $schedules = Schedule::with(['course.department', 'lecturer', 'kelas.department'])
             ->whereHas('course', function($query) use ($selectedDeptId) {
                 $query->where('department_id', $selectedDeptId);
             })
             ->get();
+
+        $departments = \App\Models\Department::all();
 
         return view('mahasiswa.jadwal_kelas', compact('schedules', 'departments', 'selectedDeptId', 'user'));
     }
