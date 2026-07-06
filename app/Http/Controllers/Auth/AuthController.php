@@ -102,9 +102,8 @@ class AuthController extends Controller
 
         // Security Check for Admin
         if ($validated['role'] === 'admin') {
-            // Secret code constraint for admin registration (Customizable via .env)
-            $secretCode = env('ADMIN_REGISTRATION_CODE', 'ADMIN-RAHASIA-123');
-            if ($validated['identifier'] !== $secretCode) {
+            // Secret code constraint for admin registration (Format: admin-2026-[number])
+            if (!preg_match('/^admin-2026-\d+$/i', $validated['identifier'])) {
                 return redirect()->back()->withErrors(['identifier' => 'Kode Registrasi Admin tidak valid! Pendaftaran ditolak.'])->withInput();
             }
         }

@@ -161,8 +161,8 @@
                 dynamicHelp.innerText = "NIP digunakan untuk validasi jadwal mengajar.";
             } else if (role === 'admin') {
                 dynamicLabel.innerText = "Kode Registrasi Admin";
-                dynamicInput.placeholder = "Masukkan Kode Rahasia Admin";
-                dynamicHelp.innerText = "Hubungi Super-Admin untuk mendapatkan kode registrasi angka acak.";
+                dynamicInput.placeholder = "Contoh: admin-2026-1234";
+                dynamicHelp.innerText = "Format kode registrasi: admin-2026-nomor (Contoh: admin-2026-123).";
             }
         }
 
