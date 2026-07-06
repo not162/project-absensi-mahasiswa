@@ -33,7 +33,7 @@
                                 <i class="fas fa-user me-2"></i> Nama Lengkap
                             </label>
                             <input type="text" name="name" id="name" class="form-control @error('name') is-invalid @enderror" 
-                                   value="{{ old('name') }}" required autofocus>
+                                   value="{{ old('name') }}" placeholder="Masukkan nama lengkap Anda" required autofocus>
                             @error('name')
                                 <span class="invalid-feedback">{{ $message }}</span>
                             @enderror
@@ -218,7 +218,7 @@
 
             if (role === 'user') {
                 dynamicLabel.innerText = "Nomor Induk Mahasiswa (NIM)";
-                dynamicInput.placeholder = "Masukkan NIM Anda";
+                dynamicInput.placeholder = "Contoh: 20240010001";
                 dynamicHelp.innerText = "NIM digunakan sebagai identitas utama pencatatan absensi kuliah.";
                 
                 deptWrapper.style.display = 'block';
@@ -227,7 +227,7 @@
                 classSelect.setAttribute('required', 'required');
             } else if (role === 'dosen') {
                 dynamicLabel.innerText = "NIP Dosen (Nomor Induk Pegawai)";
-                dynamicInput.placeholder = "Masukkan NIP Anda";
+                dynamicInput.placeholder = "Contoh: DSN-2026-001 atau DSN001";
                 dynamicHelp.innerText = "NIP digunakan untuk validasi jadwal mengajar.";
                 
                 deptWrapper.style.display = 'block';
