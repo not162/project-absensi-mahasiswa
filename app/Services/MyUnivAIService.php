@@ -28,7 +28,7 @@ class MyUnivAIService
         $analytics = $this->analyticsService->analyze($student);
         $context = $this->buildRagContext($student, $analytics);
 
-        $currentTimestamp = now()->translatedFormat('l, d F Y H:i:s');
+        $currentTimestamp = now('Asia/Jakarta')->translatedFormat('l, d F Y H:i:s');
         $rlhfScore = $student->rlhf_score ?? 100.00;
 
         // 2. Define System Guardrails
@@ -55,7 +55,7 @@ ATURAN DAN GUARDRAILS YANG WAJIB DIPATUHI:
 5. JIKA MAHASISWA BERTANYA HAL NON-AKADEMIK (misalnya resep masakan, gosip artis, olahraga luar kampus, atau hal umum lainnya yang tidak berhubungan dengan perkuliahan), Anda WAJIB menolak secara sopan: "Maaf, sebagai asisten akademik MyUniv, saya hanya diizinkan untuk membantu Anda dalam hal akademis, tips belajar, dan perkuliahan."
 6. Jika mahasiswa bertanya tentang "tips belajar", "lulus ujian teori", atau "membuat project best practice", berikan penjelasan akademis yang terstruktur (contoh: metode Spaced Repetition, Active Recall untuk ujian teori, dan standard struktur folder/dokumentasi Git untuk project best-practice).
 7. Gunakan Bahasa Indonesia yang sopan, profesional, namun tetap mudah dipahami.
-8. KETENTUAN TAMPILAN OUTPUT: JANGAN PERNAH menggunakan kata, kalimat, atau awalan '*output responses ai*' atau label serupa. Langsung berikan jawaban bersih berformat markdown.
+8. KETENTUAN TAMPILAN OUTPUT: JANGAN PERNAH menggunakan kata, kalimat, atau awalan '*output responses ai*' atau label serupa. Selain itu, JANGAN PERNAH menggunakan simbol format markdown seperti '#', '*', atau '/' dalam jawaban Anda (seperti '###', '####', '**judul**', dll). Berikan jawaban bersih dalam format TEKS BIASA (plain text) dengan pemisah baris baru (newline) dan spasi yang rapi untuk kenyamanan pembaca.
 PROMPT;
 
         // 3. Prepare messages array for Groq API

@@ -115,7 +115,7 @@
                                     <span class="spinner-grow spinner-grow-sm text-success" role="status" style="width: 8px; height: 8px;"></span>
                                     Online &amp; RAG Llama-3.3
                                 </span>
-                                <span class="badge bg-info text-white font-monospace" id="rlhfScoreBadge" style="font-size: 10px;">
+                                <span class="badge bg-info text-white font-monospace d-none" id="rlhfScoreBadge">
                                     RLHF Alignment: {{ round($user->rlhf_score, 2) }}%
                                 </span>
                             </div>
@@ -155,7 +155,6 @@
                                         
                                         {{-- Feedback buttons --}}
                                         <div class="mt-2 pt-1 border-top d-flex gap-2 justify-content-end align-items-center feedback-bar">
-                                            <span class="text-muted" style="font-size: 9px;">Bantu latih AI:</span>
                                             <button type="button" class="btn btn-link p-0 text-success small" onclick="submitRlhfFeedback(this, 'terimakasih')" title="Puas / Terima Kasih (+1.5%)"><i class="far fa-thumbs-up"></i></button>
                                             <button type="button" class="btn btn-link p-0 text-warning small" onclick="submitRlhfFeedback(this, 'tidak_cukup_puas')" title="Tidak Cukup Puas (-0.18%)"><i class="far fa-meh"></i></button>
                                             <button type="button" class="btn btn-link p-0 text-danger small" onclick="submitRlhfFeedback(this, 'kurang_puas')" title="Kurang Puas (-2.1%)"><i class="far fa-thumbs-down"></i></button>
@@ -304,7 +303,6 @@
                             <div class="mb-0 small markdown-content" style="white-space: pre-wrap;">${data.response}</div>
                             <span class="d-block mt-1 text-muted" style="font-size: 9px;">${data.time}</span>
                             <div class="mt-2 pt-1 border-top d-flex gap-2 justify-content-end align-items-center feedback-bar">
-                                <span class="text-muted" style="font-size: 9px;">Bantu latih AI:</span>
                                 <button type="button" class="btn btn-link p-0 text-success small" onclick="submitRlhfFeedback(this, 'terimakasih')" title="Puas / Terima Kasih (+1.5%)"><i class="far fa-thumbs-up"></i></button>
                                 <button type="button" class="btn btn-link p-0 text-warning small" onclick="submitRlhfFeedback(this, 'tidak_cukup_puas')" title="Tidak Cukup Puas (-0.18%)"><i class="far fa-meh"></i></button>
                                 <button type="button" class="btn btn-link p-0 text-danger small" onclick="submitRlhfFeedback(this, 'kurang_puas')" title="Kurang Puas (-2.1%)"><i class="far fa-thumbs-down"></i></button>
@@ -357,11 +355,9 @@
         .then(res => res.json())
         .then(data => {
             if (data.success) {
-                // Update badge
-                document.getElementById('rlhfScoreBadge').innerText = `RLHF Alignment: ${data.rlhf_score}%`;
                 
                 // Show success status
-                bar.innerHTML = `<span class="text-success" style="font-size: 9px;"><i class="fas fa-check-circle me-1"></i> Penyelarasan RLHF berhasil (${data.rlhf_score}%)</span>`;
+                bar.innerHTML = `<span class="text-success" style="font-size: 9px;"><i class="fas fa-check-circle me-1"></i> Terima kasih atas feedback Anda!</span>`;
             } else {
                 buttons.forEach(b => b.disabled = false);
             }
