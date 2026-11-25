@@ -24,25 +24,41 @@ class StudentAttendanceController extends Controller
         $today = Carbon::today();
 
         // Buat atau ambil pertemuan hari ini
-        $meeting = ClassMeeting::firstOrCreate(
-            ['schedule_id' => $schedule->id, 'tanggal' => $today],
-            [
-                'lecturer_id'   => $user->id,
-                'pertemuan_ke'  => ClassMeeting::where('schedule_id', $schedule->id)->count() + 1,
-                'materi'        => $request->materi ?? '',
-            ]
-        );
+        $meeting = ClassMeeting::where('schedule_id', $schedule->id)
+            ->whereDate('tanggal', $today)
+            ->first();
+
+        if (!$meeting) {
+            $meeting = ClassMeeting::create([
+                'schedule_id'  => $schedule->id,
+                'tanggal'      => $today->toDateString(),
+                'lecturer_id'  => $user->id,
+                'pertemuan_ke' => (ClassMeeting::where('schedule_id', $schedule->id)->max('pertemuan_ke') ?? 0) + 1,
+                'materi'       => $request->materi ?? '',
+            ]);
+        }
 
         // Begitu dosen mulai kelas, otomatis tercatat juga sebagai "Absen Mengajar"
         // (hadir) supaya langsung muncul di riwayat absen mengajar milik admin.
-        TeachingAttendance::updateOrCreate(
-            ['schedule_id' => $schedule->id, 'tanggal' => $today],
-            [
+        $teaching = TeachingAttendance::where('schedule_id', $schedule->id)
+            ->whereDate('tanggal', $today)
+            ->first();
+
+        if ($teaching) {
+            $teaching->update([
                 'user_id' => $user->id,
                 'status'  => 'hadir',
                 'materi'  => $meeting->materi,
-            ]
-        );
+            ]);
+        } else {
+            TeachingAttendance::create([
+                'schedule_id' => $schedule->id,
+                'tanggal'     => $today->toDateString(),
+                'user_id'     => $user->id,
+                'status'      => 'hadir',
+                'materi'      => $meeting->materi,
+            ]);
+        }
 
         // Ambil semua mahasiswa di kelas jadwal ini
         $mahasiswa = $schedule->kelas
@@ -63,6 +79,7 @@ class StudentAttendanceController extends Controller
             'meeting_id' => 'required|exists:class_meetings,id',
             'materi'     => 'nullable|string|max:255',
             'absen'      => 'required|array',
+            'absen.*'    => 'required|in:hadir,izin,sakit,tidak_hadir',
         ]);
 
         $meeting = ClassMeeting::findOrFail($request->meeting_id);
@@ -149,45 +166,7 @@ class StudentAttendanceController extends Controller
         if ($kelasF)    $scheduleQuery->where('class_id', $kelasF);
 
         $schedules = $scheduleQuery->get();
-
-        // Ambil data rekap per jadwal
-        $rekap = [];
-        foreach ($schedules as $schedule) {
-            $meetings = ClassMeeting::where('schedule_id', $schedule->id)->pluck('id');
-            $mahasiswa = $schedule->kelas
-                ? User::where('class_id', $schedule->kelas->id)->where('role', 'user')->orderBy('name')->get()
-                : collect();
-
-            $rows = [];
-            foreach ($mahasiswa as $mhs) {
-                $att = StudentAttendance::whereIn('meeting_id', $meetings)
-                    ->where('student_id', $mhs->id)
-                    ->selectRaw("
-                        SUM(status = 'hadir')       as hadir,
-                        SUM(status = 'izin')        as izin,
-                        SUM(status = 'sakit')       as sakit,
-                        SUM(status = 'tidak_hadir') as tidak_hadir,
-                        COUNT(*)                    as total
-                    ")->first();
-
-                $rows[] = [
-                    'mahasiswa'   => $mhs,
-                    'hadir'       => $att->hadir       ?? 0,
-                    'izin'        => $att->izin        ?? 0,
-                    'sakit'       => $att->sakit       ?? 0,
-                    'tidak_hadir' => $att->tidak_hadir ?? 0,
-                    'total'       => $att->total       ?? 0,
-                    'persen'      => $att->total > 0 ? round(($att->hadir / $att->total) * 100) : 0,
-                ];
-
-            }
-
-            $rekap[] = [
-                'schedule'  => $schedule,
-                'rows'      => $rows,
-                'pertemuan' => $meetings->count(),
-            ];
-        }
+        $rekap = $this->buildRekapData($schedules);
 
         // Data untuk filter dropdown
         $myCourses = Schedule::where('user_id', $user->id)
@@ -222,7 +201,27 @@ class StudentAttendanceController extends Controller
         if ($kelasF)  $scheduleQuery->where('schedules.class_id', $kelasF);
 
         $schedules = $scheduleQuery->get();
+        $rekap = $this->buildRekapData($schedules);
 
+        if ($request->get('export') === 'pdf') {
+            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('admin.absensi.rekap_pdf', compact(
+                'rekap', 'semesterF', 'courseF', 'kelasF'
+            ));
+            return $pdf->stream('Rekap_Kehadiran_Mahasiswa.pdf');
+        }
+
+        $allCourses = Course::orderBy('nama_matkul')->get();
+        $allKelas   = Kelas::with('department')->orderBy('semester')->get();
+
+        return view('admin.absensi.rekap', compact(
+            'rekap', 'allCourses', 'allKelas',
+            'semesterF', 'courseF', 'kelasF'
+        ));
+    }
+
+    /** Bangun data rekap kehadiran per jadwal tanpa N+1 per mahasiswa */
+    private function buildRekapData($schedules): array
+    {
         $rekap = [];
         foreach ($schedules as $schedule) {
             $meetings = ClassMeeting::where('schedule_id', $schedule->id)->pluck('id');
@@ -230,26 +229,35 @@ class StudentAttendanceController extends Controller
                 ? User::where('class_id', $schedule->kelas->id)->where('role', 'user')->orderBy('name')->get()
                 : collect();
 
+            $statsByStudent = $meetings->isNotEmpty()
+                ? StudentAttendance::whereIn('meeting_id', $meetings)
+                    ->groupBy('student_id')
+                    ->selectRaw("
+                        student_id,
+                        SUM(CASE WHEN status = 'hadir' THEN 1 ELSE 0 END) as hadir,
+                        SUM(CASE WHEN status = 'izin' THEN 1 ELSE 0 END) as izin,
+                        SUM(CASE WHEN status = 'sakit' THEN 1 ELSE 0 END) as sakit,
+                        SUM(CASE WHEN status = 'tidak_hadir' THEN 1 ELSE 0 END) as tidak_hadir,
+                        COUNT(*) as total
+                    ")
+                    ->get()
+                    ->keyBy('student_id')
+                : collect();
+
             $rows = [];
             foreach ($mahasiswa as $mhs) {
-                $att = StudentAttendance::whereIn('meeting_id', $meetings)
-                    ->where('student_id', $mhs->id)
-                    ->selectRaw("
-                        SUM(status = 'hadir')       as hadir,
-                        SUM(status = 'izin')        as izin,
-                        SUM(status = 'sakit')       as sakit,
-                        SUM(status = 'tidak_hadir') as tidak_hadir,
-                        COUNT(*)                    as total
-                    ")->first();
+                $att = $statsByStudent->get($mhs->id);
+                $total = (int) ($att->total ?? 0);
+                $hadir = (int) ($att->hadir ?? 0);
 
                 $rows[] = [
                     'mahasiswa'   => $mhs,
-                    'hadir'       => $att->hadir       ?? 0,
-                    'izin'        => $att->izin        ?? 0,
-                    'sakit'       => $att->sakit       ?? 0,
-                    'tidak_hadir' => $att->tidak_hadir ?? 0,
-                    'total'       => $att->total       ?? 0,
-                    'persen'      => $att->total > 0 ? round(($att->hadir / $att->total) * 100) : 0,
+                    'hadir'       => $hadir,
+                    'izin'        => (int) ($att->izin ?? 0),
+                    'sakit'       => (int) ($att->sakit ?? 0),
+                    'tidak_hadir' => (int) ($att->tidak_hadir ?? 0),
+                    'total'       => $total,
+                    'persen'      => $total > 0 ? round(($hadir / $total) * 100) : 0,
                 ];
             }
 
@@ -260,13 +268,7 @@ class StudentAttendanceController extends Controller
             ];
         }
 
-        $allCourses = Course::orderBy('nama_matkul')->get();
-        $allKelas   = Kelas::with('department')->orderBy('semester')->get();
-
-        return view('admin.absensi.rekap', compact(
-            'rekap', 'allCourses', 'allKelas',
-            'semesterF', 'courseF', 'kelasF'
-        ));
+        return $rekap;
     }
 
 }

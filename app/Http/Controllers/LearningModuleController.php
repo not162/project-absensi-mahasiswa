@@ -48,11 +48,14 @@ class LearningModuleController extends Controller
 
     public function edit(LearningModule $module)
     {
+        abort_if($module->dosen_id !== Auth::id() && Auth::user()->role !== 'admin', 403);
         return view('dosen.modules.edit', compact('module'));
     }
 
     public function update(Request $request, LearningModule $module)
     {
+        abort_if($module->dosen_id !== Auth::id() && Auth::user()->role !== 'admin', 403);
+
         $request->validate([
             'title' => 'required|string|max:255',
             'category_stem' => 'required|string',
@@ -79,6 +82,8 @@ class LearningModuleController extends Controller
 
     public function destroy(LearningModule $module)
     {
+        abort_if($module->dosen_id !== Auth::id() && Auth::user()->role !== 'admin', 403);
+
         if ($module->file_path) {
             Storage::disk('public')->delete($module->file_path);
         }

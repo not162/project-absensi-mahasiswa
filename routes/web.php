@@ -68,12 +68,11 @@ Route::middleware('auth')->group(function () {
         // Users & Departments
         Route::get('/users-export-pdf', [UserController::class, 'exportPdf'])->name('users.exportPdf');
         Route::post('/users-import', [UserController::class, 'importExcel'])->name('users.import');
-        Route::resource('users', UserController::class);
-        Route::resource('departments', DepartmentController::class);
+        Route::resource('users', UserController::class)->except(['show']);
+        Route::resource('departments', DepartmentController::class)->except(['show']);
 
         // Dosen Management
         Route::resource('dosen', DosenController::class);
-        Route::post('/dosen', [DosenController::class, 'store'])->name('dosen.store'); // was outside auth
         Route::resource('dosen-pengajar', DosenPengajarController::class)->except(['create', 'store']);
         Route::get('/dosen-pengajar', [DosenPengajarController::class, 'index'])->name('dosenpengajar.index');
         
@@ -88,15 +87,6 @@ Route::middleware('auth')->group(function () {
 
         // Exams (Admin CRUD)
         Route::resource('exam', ExamScheduleController::class)->except(['index', 'show']);
-        
-        Route::prefix('exam')->group(function () {
-            Route::get('/create', [ExamScheduleController::class, 'create'])->name('exam.create');
-            Route::post('/', [ExamScheduleController::class, 'store'])->name('exam.store');
-            Route::get('/{exam}/edit', [ExamScheduleController::class, 'edit'])->name('exam.edit');
-            Route::put('/{exam}', [ExamScheduleController::class, 'update'])->name('exam.update');
-            Route::delete('/{exam}', [ExamScheduleController::class, 'destroy'])->name('exam.destroy');
-        });
-
 
         Route::get('/teaching-attendance/history', [TeachingAttendanceController::class, 'history'])->name('teaching-attendance.history');
         Route::post('/teaching-attendance/admin-store', [TeachingAttendanceController::class, 'adminStore'])->name('teaching-attendance.adminStore');
@@ -105,7 +95,6 @@ Route::middleware('auth')->group(function () {
         Route::get('/admin/repeats', [CourseRepeatController::class, 'index'])->name('repeats.index');
         Route::post('/admin/repeats/{repeat}/approve', [CourseRepeatController::class, 'approve'])->name('repeats.approve');
         Route::post('/admin/repeats/{repeat}/reject', [CourseRepeatController::class, 'reject'])->name('repeats.reject');
-        Route::delete('/admin/repeats/{repeat}', [CourseRepeatController::class, 'destroy'])->name('repeats.destroy');
         
         Route::get('/absensi/rekap-admin', [StudentAttendanceController::class, 'rekapAdmin'])->name('absensi.rekapAdmin');
         Route::post('/admin/users/{student}/assign-class', [App\Http\Controllers\Admin\StudentVerificationController::class, 'assignClass'])->name('users.assignClass');
@@ -156,7 +145,7 @@ Route::middleware('auth')->group(function () {
         })->name('dosen.jadwal');
         Route::get('/my-supervisions', [ExamScheduleController::class, 'mySupervisions'])->name('exam.mySupervisions');
         // Exam / Supervisions
-        Route::get('/exam-supervisions', [App\Http\Controllers\ExamScheduleController::class, 'dosenSupervisions'])->name('dosen.supervisions.index');
+        Route::get('/exam-supervisions', [ExamScheduleController::class, 'mySupervisions'])->name('dosen.supervisions.index');
 
         // LMS Modules
         Route::resource('modules', App\Http\Controllers\LearningModuleController::class)->names([
@@ -183,7 +172,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/my-grades/pdf', [GradeController::class, 'exportPdf'])->name('grades.my.pdf');
         
         // Repeat Course Routes
-        Route::get('/repeats', [App\Http\Controllers\CourseRepeatController::class, 'index'])->name('repeats.my');
+        Route::get('/repeats', [App\Http\Controllers\CourseRepeatController::class, 'myRepeats'])->name('repeats.my');
         Route::post('/repeats', [App\Http\Controllers\CourseRepeatController::class, 'store'])->name('repeats.store');
 
         // STEM Exam Routes
@@ -239,5 +228,8 @@ Route::middleware('auth')->group(function () {
     // Assignment Show (Dosen & Mahasiswa) & Submit (Mahasiswa)
     Route::get('/assignments/{assignment}', [AssignmentController::class, 'show'])->name('assignments.show');
     Route::post('/assignments/submit', [AssignmentController::class, 'submit'])->name('assignments.submit');
+
+    // Course Repeat Destroy (Admin or owning student if still pending)
+    Route::middleware('role:admin,user')->delete('/repeats/{repeat}', [CourseRepeatController::class, 'destroy'])->name('repeats.destroy');
 
 });

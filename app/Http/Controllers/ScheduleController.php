@@ -9,6 +9,11 @@ use Illuminate\Http\Request;
 
 class ScheduleController extends Controller
 {
+    private function hariOrderSql(string $column = 'hari'): string
+    {
+        return "CASE {$column} WHEN 'Senin' THEN 1 WHEN 'Selasa' THEN 2 WHEN 'Rabu' THEN 3 WHEN 'Kamis' THEN 4 WHEN 'Jumat' THEN 5 WHEN 'Sabtu' THEN 6 WHEN 'Minggu' THEN 7 ELSE 8 END";
+    }
+
     /** Semua jadwal (admin) — dikelompokkan per prodi, semester, kelas */
     public function index()
     {
@@ -25,7 +30,7 @@ class ScheduleController extends Controller
         $schedules = $query->orderBy('departments.name')
             ->orderBy('classes.semester')
             ->orderBy('classes.nomor_kelas')
-            ->orderByRaw("FIELD(schedules.hari,'Senin','Selasa','Rabu','Kamis','Jumat','Sabtu')")
+            ->orderByRaw($this->hariOrderSql('schedules.hari'))
             ->orderBy('schedules.jam_mulai')
             ->select('schedules.*')
             ->get();
@@ -46,7 +51,7 @@ class ScheduleController extends Controller
 
         $schedules = Schedule::with(['course.department', 'kelas.department', 'kelas.mahasiswa'])
             ->where('user_id', $dosen->id)
-            ->orderByRaw("FIELD(hari,'Senin','Selasa','Rabu','Kamis','Jumat','Sabtu')")
+            ->orderByRaw($this->hariOrderSql('hari'))
             ->orderBy('jam_mulai')
             ->get();
 
@@ -96,8 +101,14 @@ class ScheduleController extends Controller
             'replacement_date' => 'required_if:is_replacement,1|nullable|date',
         ]);
 
-        $data = $request->all();
-        $data['is_replacement'] = $request->has('is_replacement') ? 1 : 0;
+        $data = $request->only([
+            'course_id', 'user_id', 'class_id', 'hari', 'jam_mulai', 'jam_selesai',
+            'mode', 'ruangan', 'link_online', 'kode_online', 'tahun_ajaran', 'replacement_date',
+        ]);
+        $data['is_replacement'] = $request->boolean('is_replacement');
+        if (!$data['is_replacement']) {
+            $data['replacement_date'] = null;
+        }
 
         Schedule::create($data);
 
@@ -169,8 +180,14 @@ class ScheduleController extends Controller
             'replacement_date' => 'required_if:is_replacement,1|nullable|date',
         ]);
 
-        $data = $request->all();
-        $data['is_replacement'] = $request->has('is_replacement') ? 1 : 0;
+        $data = $request->only([
+            'course_id', 'user_id', 'class_id', 'hari', 'jam_mulai', 'jam_selesai',
+            'mode', 'ruangan', 'link_online', 'kode_online', 'tahun_ajaran', 'replacement_date',
+        ]);
+        $data['is_replacement'] = $request->boolean('is_replacement');
+        if (!$data['is_replacement']) {
+            $data['replacement_date'] = null;
+        }
 
         $schedule->update($data);
 

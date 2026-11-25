@@ -21,17 +21,20 @@
         $isHariIni  = $schedule->hari === $hariIni;
         $meeting    = $meetingData[$schedule->id] ?? null;
         $myStatus   = $attendanceStatus[$schedule->id] ?? null;
+        $todayAtt   = $todayAttendances[$schedule->id] ?? null;
         $assignments = $assignmentsByJadwal[$schedule->id] ?? collect();
 
         // Statistik kehadiran untuk matkul ini
         $meetingIds = \App\Models\ClassMeeting::where('schedule_id', $schedule->id)->pluck('id');
-        $absen = \App\Models\StudentAttendance::whereIn('meeting_id', $meetingIds)
-            ->where('student_id', $user->id)
-            ->selectRaw("SUM(status='hadir') as hadir, SUM(status='izin') as izin,
-                         SUM(status='sakit') as sakit, SUM(status='tidak_hadir') as tidak_hadir,
-                         COUNT(*) as total")
-            ->first();
-        $persen = $absen->total > 0 ? round(($absen->hadir / $absen->total) * 100) : 0;
+        $absen = $meetingIds->isNotEmpty()
+            ? \App\Models\StudentAttendance::whereIn('meeting_id', $meetingIds)
+                ->where('student_id', $user->id)
+                ->selectRaw("SUM(CASE WHEN status='hadir' THEN 1 ELSE 0 END) as hadir, SUM(CASE WHEN status='izin' THEN 1 ELSE 0 END) as izin,
+                             SUM(CASE WHEN status='sakit' THEN 1 ELSE 0 END) as sakit, SUM(CASE WHEN status='tidak_hadir' THEN 1 ELSE 0 END) as tidak_hadir,
+                             COUNT(*) as total")
+                ->first()
+            : null;
+        $persen = ($absen && $absen->total > 0) ? round(($absen->hadir / $absen->total) * 100) : 0;
     @endphp
 
     <div class="card shadow-sm mb-4 {{ $isHariIni ? 'border-warning' : '' }}">
@@ -130,10 +133,10 @@
                                         @csrf
                                         <input type="hidden" name="schedule_id" value="{{ $schedule->id }}">
                                         <label class="fw-semibold text-dark mb-1" style="font-size: 11px;">Berikan Komentar Anda Terhadap Pengajar Dosen</label>
-                                        <textarea name="feedback_dosen" class="form-control form-control-sm mb-2" rows="2" placeholder="Tulis komentar..." required style="font-size: 11px;">{{ \App\Models\StudentAttendance::where('meeting_id', $meeting->id)->where('student_id', $user->id)->first()?->feedback_dosen }}</textarea>
+                                        <textarea name="feedback_dosen" class="form-control form-control-sm mb-2" rows="2" placeholder="Tulis komentar..." required style="font-size: 11px;">{{ $todayAtt?->feedback_dosen }}</textarea>
                                         <div class="d-flex gap-2 align-items-center mb-2">
                                             @php
-                                                $curFeedbackSesuai = \App\Models\StudentAttendance::where('meeting_id', $meeting->id)->where('student_id', $user->id)->first()?->feedback_sesuai;
+                                                $curFeedbackSesuai = $todayAtt?->feedback_sesuai;
                                             @endphp
                                             <div class="form-check form-check-inline mb-0">
                                                 <input class="form-check-input" type="radio" name="feedback_sesuai" id="sesuai-{{ $schedule->id }}" value="Sesuai" required @checked($curFeedbackSesuai === 'Sesuai')>
@@ -240,10 +243,9 @@
                                                 <button type="submit" class="btn btn-sm btn-outline-primary">Perbarui</button>
                                             </div>
                                             @if(in_array($myStatus, ['izin', 'sakit']))
-                                                @php $att = \App\Models\StudentAttendance::where('meeting_id', $meeting->id)->where('student_id', $user->id)->first(); @endphp
-                                                @if($att && $att->file_bukti)
+                                                @if($todayAtt && $todayAtt->file_bukti)
                                                     <div>
-                                                        <a href="{{ asset('storage/'.$att->file_bukti) }}" target="_blank" class="small"><i class="fas fa-file-image me-1"></i>Lihat Bukti Terunggah</a>
+                                                        <a href="{{ asset('storage/'.$todayAtt->file_bukti) }}" target="_blank" class="small"><i class="fas fa-file-image me-1"></i>Lihat Bukti Terunggah</a>
                                                     </div>
                                                 @endif
                                             @endif
@@ -410,8 +412,8 @@
     let checkinModalObj = null;
     let currentAbsenDarimanaSaja = false;
 
-    const CAMPUS_LAT = {{ env('CAMPUS_LATITUDE', -6.3428) }};
-    const CAMPUS_LNG = {{ env('CAMPUS_LONGITUDE', 106.7383) }};
+    const CAMPUS_LAT = {{ config('services.campus.latitude', -6.3428) }};
+    const CAMPUS_LNG = {{ config('services.campus.longitude', 106.7383) }};
 
     function openCheckinModal(scheduleId) {
         document.getElementById('modal-schedule-id').value = scheduleId;
@@ -449,14 +451,9 @@
 
             // Get user location
             if (!navigator.geolocation) {
-                if (currentAbsenDarimanaSaja) {
-                    statusDiv.className = "alert alert-success py-2";
-                    statusDiv.innerHTML = '<i class="fas fa-check-circle me-2"></i>Absen Darimana Saja Aktif (Browser tidak mendukung Geolocation).';
-                    submitBtn.disabled = false;
-                } else {
-                    statusDiv.className = "alert alert-danger py-2";
-                    statusDiv.innerHTML = '<i class="fas fa-exclamation-triangle me-2"></i>Geolocation tidak didukung oleh browser Anda.';
-                }
+                statusDiv.className = "alert alert-success py-2";
+                statusDiv.innerHTML = '<i class="fas fa-check-circle me-2"></i>Absensi diizinkan dari lokasi mana saja (Browser tidak mendukung Geolocation).';
+                submitBtn.disabled = false;
                 return;
             }
 

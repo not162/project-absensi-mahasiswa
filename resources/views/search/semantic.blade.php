@@ -129,7 +129,7 @@
         <div class="row g-4">
             @forelse($recommendedCourses as $res)
                 <div class="col-md-6 col-lg-4">
-                    <div class="card border-0 shadow-sm h-100 course-result-card transition-all" style="cursor: pointer;" onclick="setSearchQuery('{{ $res->nama_matkul }}')">
+                    <div class="card border-0 shadow-sm h-100 course-result-card transition-all" style="cursor: pointer;" data-query="{{ $res->nama_matkul }}" onclick="setSearchQuery(this.dataset.query)">
                         <div class="card-body p-4 d-flex flex-column justify-content-between">
                             <div>
                                 <div class="d-flex justify-content-between align-items-center mb-3">

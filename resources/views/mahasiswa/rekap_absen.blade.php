@@ -44,17 +44,17 @@
                                         @endif
                                     </td>
                                     <td>
-                                        <span class="fw-semibold text-dark">{{ \Carbon\Carbon::parse($att->meeting->tanggal)->translatedFormat('d F Y') }}</span>
+                                        <span class="fw-semibold text-dark">{{ $att->meeting?->tanggal ? \Carbon\Carbon::parse($att->meeting->tanggal)->translatedFormat('d F Y') : '-' }}</span>
                                     </td>
                                     <td>
-                                        <strong class="text-dark">{{ $att->meeting->schedule->course->nama_matkul ?? '-' }}</strong>
-                                        <span class="text-muted d-block small">Dosen: {{ $att->meeting->schedule->lecturer->name ?? '-' }}</span>
+                                        <strong class="text-dark">{{ $att->meeting?->schedule?->course?->nama_matkul ?? '-' }}</strong>
+                                        <span class="text-muted d-block small">Dosen: {{ $att->meeting?->schedule?->lecturer?->name ?? '-' }}</span>
                                     </td>
                                     <td>
-                                        <span class="badge bg-secondary">Pertemuan {{ $att->meeting->pertemuan_ke }}</span>
+                                        <span class="badge bg-secondary">Pertemuan {{ $att->meeting?->pertemuan_ke ?? '-' }}</span>
                                     </td>
                                     <td>
-                                        <span class="text-wrap d-block" style="max-width: 250px;">{{ $att->meeting->materi ?? 'Tidak ada rangkuman materi.' }}</span>
+                                        <span class="text-wrap d-block" style="max-width: 250px;">{{ $att->meeting?->materi ?: 'Tidak ada rangkuman materi.' }}</span>
                                     </td>
                                     <td>
                                         <span class="badge bg-primary py-2 px-3"><i class="fas fa-stamp me-1"></i> Sukses</span>
@@ -135,10 +135,7 @@
 @endpush
 
 @push('scripts')
-<!-- jQuery & DataTables JS CDN -->
-<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+<!-- DataTables Buttons JS CDN (jQuery & core DataTables already loaded in layout) -->
 <script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
 <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.bootstrap5.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>

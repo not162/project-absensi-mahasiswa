@@ -57,6 +57,20 @@ class CourseRepeatController extends Controller
             'alasan'    => 'required|string|max:500',
         ]);
 
+        if ($request->filled('grade_id')) {
+            $grade = Grade::findOrFail($request->grade_id);
+            abort_if($grade->user_id !== Auth::id(), 403);
+        }
+
+        $alreadyRequested = CourseRepeat::where('user_id', Auth::id())
+            ->where('course_id', $request->course_id)
+            ->whereIn('status', ['pending', 'disetujui'])
+            ->exists();
+
+        if ($alreadyRequested) {
+            return redirect()->route('repeats.my')->with('error', 'Pengajuan pengulangan untuk mata kuliah ini sudah ada.');
+        }
+
         CourseRepeat::create([
             'user_id'   => Auth::id(),
             'course_id' => $request->course_id,
@@ -108,15 +122,21 @@ class CourseRepeatController extends Controller
         return redirect()->route('repeats.index')->with('success', 'Pengajuan ditolak');
     }
 
-    /** Mahasiswa: hapus pengajuan yang masih pending */
+    /** Admin atau Mahasiswa pemilik: hapus/batalkan pengajuan */
     public function destroy(CourseRepeat $repeat)
     {
-        if ($repeat->user_id !== Auth::id() || !$repeat->isPending()) {
+        $user = Auth::user();
+        if ($user->role !== 'admin' && ($repeat->user_id !== $user->id || !$repeat->isPending())) {
             return redirect()->back()->with('error', 'Tidak dapat menghapus pengajuan ini');
+        }
+
+        if ($repeat->bukti_foto) {
+            Storage::disk('public')->delete($repeat->bukti_foto);
         }
 
         $repeat->delete();
 
-        return redirect()->route('repeats.my')->with('success', 'Pengajuan dibatalkan');
+        $routeName = $user->role === 'admin' ? 'repeats.index' : 'repeats.my';
+        return redirect()->route($routeName)->with('success', 'Pengajuan dibatalkan');
     }
 }

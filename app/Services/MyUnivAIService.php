@@ -14,8 +14,8 @@ class MyUnivAIService
 
     public function __construct(StudentAnalyticsService $analyticsService)
     {
-        $this->apiKey = env('GROQ_API_KEY');
-        $this->model = env('GROQ_MODEL', 'llama-3.3-70b-versatile');
+        $this->apiKey = config('services.groq.key');
+        $this->model = config('services.groq.model', 'llama-3.3-70b-versatile');
         $this->analyticsService = $analyticsService;
     }
 
@@ -75,9 +75,19 @@ PROMPT;
         // Append current message
         $messages[] = ['role' => 'user', 'content' => $userMessage];
 
-        // 4. Request Groq API
+        // 4. Request Groq API (or provide deterministic local academic fallback if key is unset)
+        if (empty($this->apiKey)) {
+            $metrics = $analytics['metrics'];
+            $prediction = $analytics['prediction'];
+            return "Halo {$student->name}, saat ini koneksi ke server LLM eksternal belum dikonfigurasi. "
+                . "Berdasarkan analisis lokal MyUniv: tingkat kehadiran Anda {$metrics['attendance_rate']}% "
+                . "({$metrics['attended_meetings']} dari {$metrics['total_meetings']} pertemuan), "
+                . "pengumpulan tugas {$metrics['submission_rate']}%, dan status risiko akademik Anda adalah {$prediction['risk_level']} "
+                . "(skor risiko {$prediction['risk_score']} dari 100). {$prediction['recommendation']}";
+        }
+
         try {
-            $response = Http::withHeaders([
+            $response = Http::timeout(15)->withHeaders([
                 'Authorization' => 'Bearer ' . $this->apiKey,
                 'Content-Type' => 'application/json',
             ])->post('https://api.groq.com/openai/v1/chat/completions', [
@@ -89,7 +99,14 @@ PROMPT;
 
             if ($response->successful()) {
                 $data = $response->json();
-                return $data['choices'][0]['message']['content'] ?? 'Maaf, terjadi kesalahan saat memproses respon AI.';
+                $content = $data['choices'][0]['message']['content'] ?? '';
+                if ($content !== '') {
+                    $content = preg_replace('/\*output responses ai\*/i', '', $content);
+                    $content = preg_replace('/^\s*#{1,6}\s*/m', '', $content);
+                    $content = str_replace('**', '', $content);
+                    return trim($content);
+                }
+                return 'Maaf, terjadi kesalahan saat memproses respon AI.';
             } else {
                 Log::error('Groq API Error Response: ' . $response->body());
                 return 'Maaf, terjadi masalah koneksi dengan server AI MyUniv. Silakan coba beberapa saat lagi.';
@@ -101,10 +118,11 @@ PROMPT;
     }
 
     /**
-     * Build RAG Context into markdown format for the LLM.
+     * Build RAG Context for the LLM.
      */
     protected function buildRagContext(User $student, array $analytics): string
     {
+        $student->loadMissing(['grades.course', 'department', 'kelas']);
         $metrics = $analytics['metrics'];
         $prediction = $analytics['prediction'];
 
@@ -123,7 +141,7 @@ PROMPT;
         $gradesText = "";
         if ($student->grades->count() > 0) {
             foreach ($student->grades as $g) {
-                $gradesText .= "- " . ($g->course->nama_matkul ?? '-') . ": Tugas=" . ($g->nilai_tugas ?? '-') . ", UTS=" . ($g->nilai_uts ?? '-') . ", UAS=" . ($g->nilai_uas ?? '-') . ", Akhir=" . ($g->nilai_akhir ?? '-') . ", Grade=" . ($g->nilai_huruf ?? '-') . "\n";
+                $gradesText .= "- " . ($g->course->nama_matkul ?? '-') . ": Tugas=" . ($g->nilai_tugas ?? '-') . ", UTS=" . ($g->nilai_uts ?? '-') . ", UAS=" . ($g->nilai_uas ?? '-') . ", Akhir=" . ($g->nilai_akhir ?? '-') . ", Grade=" . ($g->grade_huruf ?? '-') . "\n";
             }
         } else {
             $gradesText = "- Belum ada nilai terinput.\n";
@@ -147,6 +165,9 @@ DATA MAHASISWA:
 
 MATA KULIAH YANG DIIKUTI:
 {$coursesText}
+
+NILAI MATA KULIAH:
+{$gradesText}
 
 STATISTIK AKADEMIK & KINERJA:
 - Persentase Kehadiran Kelas: {$metrics['attendance_rate']}% ({$metrics['attended_meetings']}/{$metrics['total_meetings']} pertemuan berlangsung)

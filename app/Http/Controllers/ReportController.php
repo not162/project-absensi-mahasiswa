@@ -28,27 +28,40 @@ class ReportController extends Controller
      */
     public function monthly(Request $request)
     {
-        $month = $request->get('month', date('m'));
+        $rawMonth = $request->get('month', date('m'));
         $year = $request->get('year', date('Y'));
+        $month = $rawMonth;
+
+        if (is_string($rawMonth) && preg_match('/^(\d{4})-(\d{1,2})$/', $rawMonth, $matches)) {
+            $year = $matches[1];
+            $month = $matches[2];
+        }
 
         $query = Attendance::query()
             ->whereMonth('attendance_date', $month)
             ->whereYear('attendance_date', $year)
             ->with('user.department');
 
-        if ($request->has('department_id') && $request->department_id) {
-            $query->whereHas('user', function ($q) {
-                $q->where('department_id', request('department_id'));
+        if ($request->filled('department_id')) {
+            $query->whereHas('user', function ($q) use ($request) {
+                $q->where('department_id', $request->department_id);
             });
         }
 
-        if ($request->has('user_id') && $request->user_id) {
+        if ($request->filled('user_id')) {
             $query->where('user_id', $request->user_id);
         }
 
-        $attendances = $query->orderBy('attendance_date', 'desc')->paginate(20);
+        $filteredForSummary = (clone $query)->get();
+        $attendances = $query->orderBy('attendance_date', 'desc')->paginate(20)->withQueryString();
 
-        $summary = $this->generateMonthlySummary($month, $year);
+        $summary = [
+            'present' => $filteredForSummary->where('status', 'present')->count(),
+            'late' => $filteredForSummary->where('status', 'late')->count(),
+            'absent' => $filteredForSummary->where('status', 'absent')->count(),
+            'sick' => $filteredForSummary->where('status', 'sick')->count(),
+            'permission' => $filteredForSummary->where('status', 'permission')->count(),
+        ];
         $departments = Department::all();
         $users = User::where('role', 'user')->get();
 
@@ -62,10 +75,16 @@ class ReportController extends Controller
     {
         $date = $request->get('date', date('Y-m-d'));
 
-        $attendances = Attendance::whereDate('attendance_date', $date)
-            ->with('user.department')
-            ->orderBy('time_in')
-            ->get();
+        $query = Attendance::whereDate('attendance_date', $date)
+            ->with('user.department');
+
+        if ($request->filled('department_id')) {
+            $query->whereHas('user', function ($q) use ($request) {
+                $q->where('department_id', $request->department_id);
+            });
+        }
+
+        $attendances = $query->orderBy('time_in')->get();
 
         $summary = [
             'present' => $attendances->where('status', 'present')->count(),
@@ -88,9 +107,21 @@ class ReportController extends Controller
         $userId = $request->get('user_id');
         $startDate = $request->get('start_date', date('Y-m-01'));
         $endDate = $request->get('end_date', date('Y-m-t'));
+        $users = User::where('role', 'user')->orderBy('name')->get();
 
         if (!$userId) {
-            return redirect()->back()->with('error', 'Please select a user');
+            $user = null;
+            $attendances = collect();
+            $summary = [
+                'present' => 0,
+                'late' => 0,
+                'absent' => 0,
+                'sick' => 0,
+                'permission' => 0,
+                'working_days' => $this->countWorkingDays($startDate, $endDate),
+            ];
+
+            return view('reports.user', compact('user', 'attendances', 'summary', 'users', 'userId', 'startDate', 'endDate'));
         }
 
         $user = User::findOrFail($userId);
@@ -108,8 +139,6 @@ class ReportController extends Controller
             'permission' => $attendances->where('status', 'permission')->count(),
             'working_days' => $this->countWorkingDays($startDate, $endDate),
         ];
-
-        $users = User::where('role', 'user')->get();
 
         return view('reports.user', compact('user', 'attendances', 'summary', 'users', 'userId', 'startDate', 'endDate'));
     }
@@ -175,25 +204,26 @@ class ReportController extends Controller
 
     private function downloadCsv($filename, $data)
     {
-        $csv = fopen('php://output', 'w');
-        header('Content-Type: text/csv');
-        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        return response()->streamDownload(function () use ($data) {
+            $csv = fopen('php://output', 'w');
+            fputcsv($csv, ['User', 'Department', 'Date', 'Time In', 'Time Out', 'Status', 'Notes']);
 
-        fputcsv($csv, ['User', 'Department', 'Date', 'Time In', 'Time Out', 'Status', 'Notes']);
+            foreach ($data as $row) {
+                fputcsv($csv, [
+                    $row->user?->name ?? 'N/A',
+                    $row->user?->department?->name ?? 'N/A',
+                    $row->attendance_date?->format('Y-m-d') ?? $row->attendance_date,
+                    $row->time_in,
+                    $row->time_out,
+                    $row->status,
+                    $row->notes,
+                ]);
+            }
 
-        foreach ($data as $row) {
-            fputcsv($csv, [
-                $row->user->name,
-                $row->user->department?->name ?? 'N/A',
-                $row->attendance_date,
-                $row->time_in,
-                $row->time_out,
-                $row->status,
-                $row->notes,
-            ]);
-        }
-
-        fclose($csv);
+            fclose($csv);
+        }, $filename, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+        ]);
     }
 
     private function generateMonthlySummary($month, $year)

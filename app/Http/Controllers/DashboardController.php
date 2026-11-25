@@ -202,31 +202,47 @@ class DashboardController extends Controller
             ];
 
             // Get all classes taught by this Dosen (distinct)
-            $scheduleClasses = Schedule::with('kelas')
-                ->where('user_id', $user->id)
-                ->get()
+            $scheduleClasses = $courseSchedules
                 ->pluck('kelas')
                 ->filter()
                 ->unique('id');
 
-            // Generate Heatmap Data
-            $dosenScheduleIds = Schedule::where('user_id', $user->id)->pluck('id');
-            $meetings = ClassMeeting::with('schedule.kelas')
+            // Generate Heatmap Data (optimized without N+1 queries)
+            $dosenScheduleIds = $courseSchedules->pluck('id');
+            $meetings = ClassMeeting::with(['schedule.kelas', 'schedule.course'])
                 ->whereIn('schedule_id', $dosenScheduleIds)
                 ->orderBy('pertemuan_ke')
                 ->get();
 
+            $classIdsForHeatmap = $courseSchedules->pluck('class_id')->filter()->unique();
+            $studentCountByClass = $classIdsForHeatmap->isNotEmpty()
+                ? User::where('role', 'user')
+                    ->whereIn('class_id', $classIdsForHeatmap)
+                    ->selectRaw('class_id, COUNT(*) as total')
+                    ->groupBy('class_id')
+                    ->pluck('total', 'class_id')
+                : collect();
+
+            $heatmapMeetingIds = $meetings->pluck('id');
+            $hadirCountByMeeting = $heatmapMeetingIds->isNotEmpty()
+                ? StudentAttendance::whereIn('meeting_id', $heatmapMeetingIds)
+                    ->where('status', 'hadir')
+                    ->selectRaw('meeting_id, COUNT(*) as total')
+                    ->groupBy('meeting_id')
+                    ->pluck('total', 'meeting_id')
+                : collect();
+
             $heatmapData = [];
             foreach ($meetings as $meeting) {
+                if (!$meeting->schedule) {
+                    continue;
+                }
                 $className = $meeting->schedule->kelas->nomor_kelas ?? 'Kelas -';
                 $courseName = $meeting->schedule->course->nama_matkul ?? 'Matkul';
                 $meetingNum = $meeting->pertemuan_ke;
 
-                // Total students in this class
-                $totalStudents = User::where('role', 'user')->where('class_id', $meeting->schedule->class_id)->count();
-
-                // Attended students in this meeting
-                $attendedCount = StudentAttendance::where('meeting_id', $meeting->id)->where('status', 'hadir')->count();
+                $totalStudents = (int) ($studentCountByClass->get($meeting->schedule->class_id) ?? 0);
+                $attendedCount = (int) ($hadirCountByMeeting->get($meeting->id) ?? 0);
 
                 $percent = $totalStudents > 0 ? round(($attendedCount / $totalStudents) * 100) : 0;
 
@@ -260,7 +276,7 @@ class DashboardController extends Controller
         $jadwalKuliah = $kelas
             ? Schedule::with(['course', 'lecturer'])
                 ->where('class_id', $kelas->id)
-                ->orderByRaw("FIELD(hari,'Senin','Selasa','Rabu','Kamis','Jumat','Sabtu')")
+                ->orderByRaw("CASE hari WHEN 'Senin' THEN 1 WHEN 'Selasa' THEN 2 WHEN 'Rabu' THEN 3 WHEN 'Kamis' THEN 4 WHEN 'Jumat' THEN 5 WHEN 'Sabtu' THEN 6 WHEN 'Minggu' THEN 7 ELSE 8 END")
                 ->orderBy('jam_mulai')
                 ->get()
             : collect();
@@ -276,46 +292,84 @@ class DashboardController extends Controller
         $hariIni = $hariMap[$today->format('l')] ?? $today->format('l');
 
         $activeMeetings = collect();
+        $activeMeetingCheckedIn = [];
         if ($kelas) {
             $schedulesToday = Schedule::where('class_id', $kelas->id)->where('hari', $hariIni)->pluck('id');
-            $activeMeetings = ClassMeeting::with('schedule.course')
+            $activeMeetings = ClassMeeting::with(['schedule.course', 'schedule.lecturer'])
                 ->whereIn('schedule_id', $schedulesToday)
                 ->whereDate('tanggal', $today)
                 ->get();
+
+            if ($activeMeetings->isNotEmpty()) {
+                $activeMeetingCheckedIn = StudentAttendance::whereIn('meeting_id', $activeMeetings->pluck('id'))
+                    ->where('student_id', $user->id)
+                    ->pluck('meeting_id')
+                    ->flip()
+                    ->toArray();
+            }
         }
 
-        // Riwayat absensi mahasiswa (dari student_attendances)
+        // Riwayat absensi mahasiswa (20 terbaru untuk tabel, statistik lengkap dari seluruh record)
         $riwayatAbsensi = StudentAttendance::with(['meeting.schedule.course'])
             ->where('student_id', $user->id)
             ->orderByDesc('created_at')
             ->limit(20)
             ->get();
 
-        // Statistik kehadiran
-        $totalAbsen   = $riwayatAbsensi->count();
-        $totalHadir   = $riwayatAbsensi->where('status', 'hadir')->count();
-        $totalIzin    = $riwayatAbsensi->where('status', 'izin')->count();
-        $totalSakit   = $riwayatAbsensi->where('status', 'sakit')->count();
-        $totalTidakHadir = $riwayatAbsensi->where('status', 'tidak_hadir')->count();
+        $overallCounts = StudentAttendance::where('student_id', $user->id)
+            ->selectRaw("
+                SUM(CASE WHEN status = 'hadir' THEN 1 ELSE 0 END) as hadir,
+                SUM(CASE WHEN status = 'izin' THEN 1 ELSE 0 END) as izin,
+                SUM(CASE WHEN status = 'sakit' THEN 1 ELSE 0 END) as sakit,
+                SUM(CASE WHEN status = 'tidak_hadir' THEN 1 ELSE 0 END) as tidak_hadir,
+                COUNT(*) as total
+            ")
+            ->first();
+
+        // Statistik kehadiran keseluruhan
+        $totalAbsen      = (int) ($overallCounts->total ?? 0);
+        $totalHadir      = (int) ($overallCounts->hadir ?? 0);
+        $totalIzin       = (int) ($overallCounts->izin ?? 0);
+        $totalSakit      = (int) ($overallCounts->sakit ?? 0);
+        $totalTidakHadir = (int) ($overallCounts->tidak_hadir ?? 0);
         $persenKehadiran = $totalAbsen > 0 ? round(($totalHadir / $totalAbsen) * 100) : 0;
 
-        // Data grafik per matkul (Optimized to avoid N+1 queries)
+        // Data grafik per matkul & ringkasan tabel jadwal (Optimized to avoid N+1 queries)
         $grafikLabels = [];
         $grafikData   = [];
+        $hasCourseMeetings = [];
+        $jadwalStats = [];
         if ($kelas) {
             $scheduleIds = $jadwalKuliah->pluck('id');
             $allMeetings = ClassMeeting::whereIn('schedule_id', $scheduleIds)->get();
             $allMeetingIds = $allMeetings->pluck('id');
-            $allAttendances = StudentAttendance::whereIn('meeting_id', $allMeetingIds)
-                ->where('student_id', $user->id)
-                ->get();
+            $allAttendances = $allMeetingIds->isNotEmpty()
+                ? StudentAttendance::whereIn('meeting_id', $allMeetingIds)
+                    ->where('student_id', $user->id)
+                    ->get()
+                : collect();
 
             foreach ($jadwalKuliah as $jadwal) {
                 $meetingIds = $allMeetings->where('schedule_id', $jadwal->id)->pluck('id');
-                $total  = $allAttendances->whereIn('meeting_id', $meetingIds)->count();
-                $hadir  = $allAttendances->whereIn('meeting_id', $meetingIds)->where('status', 'hadir')->count();
+                $attForSchedule = $allAttendances->whereIn('meeting_id', $meetingIds);
+                $total = $attForSchedule->count();
+                $hadir = $attForSchedule->where('status', 'hadir')->count();
+                $izin  = $attForSchedule->where('status', 'izin')->count();
+                $sakit = $attForSchedule->where('status', 'sakit')->count();
+                $tidakHadir = $attForSchedule->where('status', 'tidak_hadir')->count();
+                $persen = $total > 0 ? round(($hadir / $total) * 100) : 0;
+
                 $grafikLabels[] = $jadwal->course->nama_matkul ?? '-';
-                $grafikData[]   = $total > 0 ? round(($hadir / $total) * 100) : 0;
+                $grafikData[]   = $persen;
+                $hasCourseMeetings[] = ($total > 0);
+                $jadwalStats[$jadwal->id] = [
+                    'hadir' => $hadir,
+                    'izin' => $izin,
+                    'sakit' => $sakit,
+                    'tidak_hadir' => $tidakHadir,
+                    'total' => $total,
+                    'persen' => $persen,
+                ];
             }
         }
 
@@ -324,7 +378,7 @@ class DashboardController extends Controller
             $lowAttendanceWarnings[] = "Total rata-rata kehadiran Anda berada di bawah batas aman 75% ({$persenKehadiran}%).";
         }
         foreach ($jadwalKuliah as $i => $jadwal) {
-            if (isset($grafikData[$i]) && $grafikData[$i] > 0 && $grafikData[$i] < 75) {
+            if (!empty($hasCourseMeetings[$i]) && isset($grafikData[$i]) && $grafikData[$i] < 75) {
                 $lowAttendanceWarnings[] = "Kehadiran mata kuliah " . ($jadwal->course->nama_matkul ?? '-') . " di bawah 75% (" . $grafikData[$i] . "%).";
             }
         }
@@ -336,6 +390,7 @@ class DashboardController extends Controller
             'user'            => $user,
             'kelas'           => $kelas,
             'jadwalKuliah'    => $jadwalKuliah,
+            'jadwalStats'     => $jadwalStats,
             'totalMatkul'     => $totalMatkul,
             'riwayatAbsensi'  => $riwayatAbsensi,
             'totalHadir'      => $totalHadir,
@@ -346,6 +401,7 @@ class DashboardController extends Controller
             'grafikLabels'    => $grafikLabels,
             'grafikData'      => $grafikData,
             'activeMeetings'  => $activeMeetings,
+            'activeMeetingCheckedIn' => $activeMeetingCheckedIn,
             'lowAttendanceWarnings' => $lowAttendanceWarnings,
             'analysis'        => $analysis,
         ]);
@@ -354,13 +410,13 @@ class DashboardController extends Controller
     /** Pencarian Semantik Matakuliah (Vector Database Cosine Similarity) */
     public function semanticSearch(\Illuminate\Http\Request $request, \App\Services\VectorSearchService $vectorSearch)
     {
-        $query = $request->get('query', '');
+        $query = trim((string) $request->get('query', ''));
         $results = [];
 
         $user = Auth::user();
         $recommendedCourses = collect();
 
-        if ($query) {
+        if ($query !== '') {
             $courses = Course::with('department')->get()->map(function ($c) {
                 return [
                     'id' => $c->id,
@@ -399,6 +455,12 @@ class DashboardController extends Controller
             'class_id' => 'required|exists:classes,id',
             'context_note' => 'nullable|string|max:1000',
         ]);
+
+        $user = Auth::user();
+        $teachesClass = Schedule::where('user_id', $user->id)
+            ->where('class_id', $request->class_id)
+            ->exists();
+        abort_if(!$teachesClass, 403, 'Anda hanya dapat memperbarui catatan AI untuk kelas yang Anda ajar.');
 
         $kelas = \App\Models\Kelas::findOrFail($request->class_id);
         $kelas->update(['context_note' => $request->context_note]);

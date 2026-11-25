@@ -185,13 +185,13 @@
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link {{ request()->routeIs('exam.*') ? 'active' : '' }}" href="{{ route('exam.index', ['tipe' => 'uts']) }}">
-                                    <i class="fas fa-file-signature me-2"></i> Ujian
+                                <a class="nav-link {{ request()->routeIs('mahasiswa.jadwal') ? 'active' : '' }}" href="{{ route('mahasiswa.jadwal') }}">
+                                    <i class="fas fa-check-square me-2"></i> Jadwal &amp; Absen
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link {{ request()->routeIs('exam.replacement.index') ? 'active' : '' }}" href="{{ route('exam.replacement.index') }}">
-                                    <i class="fas fa-file-invoice me-2"></i> Ujian Pengganti
+                                <a class="nav-link {{ request()->routeIs('mahasiswa.jadwal_kelas') ? 'active' : '' }}" href="{{ route('mahasiswa.jadwal_kelas') }}">
+                                    <i class="fas fa-calendar-alt me-2"></i> Jadwal Kelas
                                 </a>
                             </li>
                             <li class="nav-item">
@@ -200,13 +200,38 @@
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link {{ request()->routeIs('mahasiswa.toefl') ? 'active' : '' }}" href="{{ route('mahasiswa.toefl') }}">
+                                <a class="nav-link {{ request()->routeIs('grades.my') ? 'active' : '' }}" href="{{ route('grades.my') }}">
+                                    <i class="fas fa-star me-2"></i> Nilai &amp; KHS
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('repeats.*') ? 'active' : '' }}" href="{{ route('repeats.my') }}">
+                                    <i class="fas fa-redo me-2"></i> Pengulangan Matkul
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('exam.*') ? 'active' : '' }}" href="{{ route('exam.index', ['tipe' => 'uts']) }}">
+                                    <i class="fas fa-file-signature me-2"></i> Ujian
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('stem.*') ? 'active' : '' }}" href="{{ route('stem.index') }}">
+                                    <i class="fas fa-laptop-code me-2"></i> Ujian STEM
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('mahasiswa.toefl*') ? 'active' : '' }}" href="{{ route('mahasiswa.toefl') }}">
                                     <i class="fas fa-language me-2"></i> Ujian TOEFL/IELTS
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link {{ request()->routeIs('mahasiswa.jadwal_kelas') ? 'active' : '' }}" href="{{ route('mahasiswa.jadwal_kelas') }}">
-                                    <i class="fas fa-calendar-alt me-2"></i> Jadwal Kuliah & Kelas Pengganti
+                                <a class="nav-link {{ request()->routeIs('exam.replacement.*') ? 'active' : '' }}" href="{{ route('exam.replacement.index') }}">
+                                    <i class="fas fa-file-invoice me-2"></i> Ujian Pengganti
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('myuniv.*') ? 'active' : '' }}" href="{{ route('myuniv.ai') }}">
+                                    <i class="fas fa-brain me-2"></i> MyUniv AI Advisor
                                 </a>
                             </li>
                         @endif
@@ -279,7 +304,7 @@
             @if (session('success'))
                 Toast.fire({
                     icon: 'success',
-                    title: '{{ session('success') }}'
+                    title: @json(session('success'))
                 });
             @endif
 
@@ -287,22 +312,25 @@
                 Swal.fire({
                     icon: 'error',
                     title: 'Aksi Dibatalkan!',
-                    text: '{{ session('error') }}',
+                    text: @json(session('error')),
                     confirmButtonColor: '#d33'
                 });
             @endif
 
             @if ($errors->any())
-                let errorHtml = '<ul class="text-start">';
-                @foreach ($errors->all() as $error)
-                    errorHtml += '<li>{{ $error }}</li>';
-                @endforeach
-                errorHtml += '</ul>';
+                const validationErrors = @json($errors->all());
+                const errorList = document.createElement('ul');
+                errorList.className = 'text-start';
+                validationErrors.forEach(msg => {
+                    const li = document.createElement('li');
+                    li.textContent = msg;
+                    errorList.appendChild(li);
+                });
 
                 Swal.fire({
                     icon: 'error',
                     title: 'Data Tidak Valid / Hilang!',
-                    html: errorHtml,
+                    html: errorList.outerHTML,
                     confirmButtonColor: '#d33'
                 });
             @endif
@@ -349,9 +377,10 @@
     <!-- Real-time Polling & Offline Cache Script -->
     <script>
         document.addEventListener("DOMContentLoaded", function() {
-            // Only start polling if we are on a page that needs real-time updates
-            const url = window.location.href;
-            if (url.includes('rekap') || url.includes('dashboard') || url.includes('attendance')) {
+            // Only start polling if we are on a page that needs real-time updates (avoid reloading form pages)
+            const path = window.location.pathname;
+            const isFormPage = path.includes('teaching-attendance') || path.includes('/create') || path.includes('/edit');
+            if (!isFormPage && (path.includes('rekap') || path.includes('dashboard') || path.endsWith('/attendance'))) {
                 let lastTimestamp = 0;
                 let isFirstPoll = true;
 
@@ -371,9 +400,12 @@
                                 return;
                             }
 
-                             if (data.latest_timestamp > lastTimestamp) {
+                            if (data.latest_timestamp > lastTimestamp) {
                                 lastTimestamp = data.latest_timestamp;
-                                window.location.reload();
+                                const activeTag = document.activeElement ? document.activeElement.tagName : '';
+                                if (!['INPUT', 'TEXTAREA', 'SELECT'].includes(activeTag)) {
+                                    window.location.reload();
+                                }
                             }
                         })
                         .catch(err => {
@@ -409,11 +441,11 @@
                 const footerMap = L.map('footer-map', {
                     zoomControl: false,
                     attributionControl: false
-                }).setView([{{ env('CAMPUS_LATITUDE', -6.3428) }}, {{ env('CAMPUS_LONGITUDE', 106.7383) }}], 14);
+                }).setView([{{ config('services.campus.latitude', -6.3428) }}, {{ config('services.campus.longitude', 106.7383) }}], 14);
                 
                 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(footerMap);
                 
-                L.marker([{{ env('CAMPUS_LATITUDE', -6.3428) }}, {{ env('CAMPUS_LONGITUDE', 106.7383) }}]).addTo(footerMap)
+                L.marker([{{ config('services.campus.latitude', -6.3428) }}, {{ config('services.campus.longitude', 106.7383) }}]).addTo(footerMap)
                     .bindPopup('<b>Univ Tangsel Raya</b>');
             }
         });

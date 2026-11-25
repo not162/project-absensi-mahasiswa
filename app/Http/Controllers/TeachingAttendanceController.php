@@ -54,18 +54,26 @@ class TeachingAttendanceController extends Controller
         $schedule = Schedule::findOrFail($request->schedule_id);
         abort_if($schedule->user_id !== Auth::id(), 403);
 
-        TeachingAttendance::updateOrCreate(
-            [
+        $today = Carbon::today();
+        $existing = TeachingAttendance::where('schedule_id', $request->schedule_id)
+            ->whereDate('tanggal', $today)
+            ->first();
+
+        $payload = [
+            'user_id' => Auth::id(),
+            'status'  => $request->status,
+            'materi'  => $request->materi,
+            'catatan' => $request->catatan,
+        ];
+
+        if ($existing) {
+            $existing->update($payload);
+        } else {
+            TeachingAttendance::create(array_merge($payload, [
                 'schedule_id' => $request->schedule_id,
-                'tanggal'     => Carbon::today(),
-            ],
-            [
-                'user_id' => Auth::id(),
-                'status'  => $request->status,
-                'materi'  => $request->materi,
-                'catatan' => $request->catatan,
-            ]
-        );
+                'tanggal'     => $today->toDateString(),
+            ]));
+        }
 
         return redirect()->route('teaching-attendance.index')->with('success', 'Absen mengajar berhasil disimpan');
     }

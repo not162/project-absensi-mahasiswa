@@ -31,4 +31,14 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    'groq' => [
+        'key' => env('GROQ_API_KEY'),
+        'model' => env('GROQ_MODEL', 'llama-3.3-70b-versatile'),
+    ],
+
+    'campus' => [
+        'latitude' => (float) env('CAMPUS_LATITUDE', -6.3428),
+        'longitude' => (float) env('CAMPUS_LONGITUDE', 106.7383),
+    ],
+
 ];

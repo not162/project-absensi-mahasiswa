@@ -61,8 +61,8 @@
                                                     </span>
                                                 </td>
                                                 <td>
-                                                    <div class="fw-bold text-dark">{{ $exam->course->nama }}</div>
-                                                    <small class="text-muted">Kode: {{ $exam->course->kode }}</small>
+                                                    <div class="fw-bold text-dark">{{ $exam->course->nama_matkul ?? '-' }}</div>
+                                                    <small class="text-muted">Kode: {{ $exam->course->kode_matkul ?? '-' }}</small>
                                                 </td>
                                                 <td>
                                                     <span class="badge bg-secondary">

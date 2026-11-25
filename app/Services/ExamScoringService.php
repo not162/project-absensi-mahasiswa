@@ -33,6 +33,10 @@ class ExamScoringService
         $r1 = min($scoreTinggi, $timeCepat); 
         $z1 = 100;
 
+        // Rule 1b: Jika Score Tinggi & Time Normal -> Lulus (90)
+        $r1b = min($scoreTinggi, $timeNormal);
+        $z1b = 90;
+
         // Rule 2: Jika Score Tinggi & Time Lama -> Lulus (80)
         $r2 = min($scoreTinggi, $timeLama);
         $z2 = 80;
@@ -46,8 +50,8 @@ class ExamScoringService
         $z4 = 30;
 
         // 4. Defuzzifikasi (Metode Sugeno Weighted Average)
-        $numerator = ($r1 * $z1) + ($r2 * $z2) + ($r3 * $z3) + ($r4 * $z4);
-        $denominator = $r1 + $r2 + $r3 + $r4;
+        $numerator = ($r1 * $z1) + ($r1b * $z1b) + ($r2 * $z2) + ($r3 * $z3) + ($r4 * $z4);
+        $denominator = $r1 + $r1b + $r2 + $r3 + $r4;
 
         $fuzzyScore = ($denominator == 0) ? $rawScore : ($numerator / $denominator);
         
@@ -64,11 +68,13 @@ class ExamScoringService
 
     private function membershipTriangle($x, $a, $b, $c)
     {
-        if ($x <= $a || $x >= $c) return 0;
-        if ($x == $b) return 1;
+        if ($a == $b && $x <= $b) return 1.0;
+        if ($b == $c && $x >= $b) return 1.0;
+        if ($x <= $a || $x >= $c) return 0.0;
+        if ($x == $b) return 1.0;
         if ($x > $a && $x < $b) return ($x - $a) / ($b - $a);
         if ($x > $b && $x < $c) return ($c - $x) / ($c - $b);
-        return 0;
+        return 0.0;
     }
 
     /**

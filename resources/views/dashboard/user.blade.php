@@ -91,9 +91,7 @@
                         </div>
                         <div>
                             @php
-                                $alreadyCheckedIn = \App\Models\StudentAttendance::where('meeting_id', $meeting->id)
-                                                    ->where('student_id', $user->id)
-                                                    ->exists();
+                                $alreadyCheckedIn = !empty($activeMeetingCheckedIn[$meeting->id]);
                             @endphp
                             @if($alreadyCheckedIn)
                                 <a href="{{ route('mahasiswa.jadwal') }}" class="btn btn-success px-4 rounded-pill">
@@ -194,17 +192,7 @@
                 <tbody>
                     @forelse($jadwalKuliah as $jadwal)
                     @php
-                        $meetingIds = \App\Models\ClassMeeting::where('schedule_id', $jadwal->id)->pluck('id');
-                        $absenData  = \App\Models\StudentAttendance::whereIn('meeting_id', $meetingIds)
-                            ->where('student_id', $user->id)
-                            ->selectRaw("
-                                SUM(status='hadir') as hadir,
-                                SUM(status='izin') as izin,
-                                SUM(status='sakit') as sakit,
-                                SUM(status='tidak_hadir') as tidak_hadir,
-                                COUNT(*) as total
-                            ")->first();
-                        $persen = $absenData->total > 0 ? round(($absenData->hadir / $absenData->total) * 100) : 0;
+                        $stats = $jadwalStats[$jadwal->id] ?? ['hadir' => 0, 'izin' => 0, 'sakit' => 0, 'tidak_hadir' => 0, 'persen' => 0];
                     @endphp
                     <tr>
                         <td>
@@ -215,11 +203,11 @@
                         <td><span class="badge bg-secondary">{{ $jadwal->hari }}</span></td>
                         <td>{{ substr($jadwal->jam_mulai,0,5) }} - {{ substr($jadwal->jam_selesai,0,5) }}</td>
                         <td>{{ $jadwal->ruangan ?? '-' }}</td>
-                        <td class="text-center">{{ $absenData->hadir ?? 0 }}</td>
-                        <td class="text-center">{{ $absenData->izin ?? 0 }}</td>
-                        <td class="text-center">{{ $absenData->sakit ?? 0 }}</td>
-                        <td class="text-center">{{ $absenData->tidak_hadir ?? 0 }}</td>
-                        <td class="text-center">{{ $persen }}%</td>
+                        <td class="text-center">{{ $stats['hadir'] }}</td>
+                        <td class="text-center">{{ $stats['izin'] }}</td>
+                        <td class="text-center">{{ $stats['sakit'] }}</td>
+                        <td class="text-center">{{ $stats['tidak_hadir'] }}</td>
+                        <td class="text-center">{{ $stats['persen'] }}%</td>
                     </tr>
                     @empty
                     <tr><td colspan="10" class="text-center py-4 text-muted">Belum ada jadwal kuliah.</td></tr>
@@ -249,7 +237,7 @@
                     <tr>
                         <td>{{ $abs->meeting->schedule->course->nama_matkul ?? '-' }}</td>
                         <td>Pertemuan ke-{{ $abs->meeting->pertemuan_ke ?? '-' }}</td>
-                        <td>{{ $abs->meeting->tanggal ? $abs->meeting->tanggal->format('d/m/Y') : '-' }}</td>
+                        <td>{{ $abs->meeting?->tanggal ? $abs->meeting->tanggal->format('d/m/Y') : '-' }}</td>
                         <td>
                             @php
                                 $statusMap = [

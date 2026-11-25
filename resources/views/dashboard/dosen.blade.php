@@ -160,7 +160,7 @@
                                         @endif
                                     </td>
                                     <td>
-                                        <span class="badge bg-light text-dark border">{{ $schedule->kelas->mahasiswa->count() }} orang</span>
+                                        <span class="badge bg-light text-dark border">{{ $schedule->kelas?->mahasiswa?->count() ?? 0 }} orang</span>
                                     </td>
                                     <td>
                                         @if($meetingsDone->contains($schedule->id))
@@ -336,8 +336,6 @@
             document.getElementById('context_note').value = note;
         }
     </script>
-</div>
-
 </div>
 
 @if(array_sum($dosenAttendanceStats ?? []) > 0)

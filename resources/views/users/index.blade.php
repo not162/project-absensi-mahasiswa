@@ -29,10 +29,10 @@
                     </div>
                     <div class="modal-body">
                         <p class="small text-muted">
-                            File CSV/Excel dengan kolom: <code>nim, name, email, phone, department_id, class_id</code>.
+                            File CSV dengan kolom: <code>nim, name, email, phone, department_id, class_id</code>.
                             Baris pertama harus header.
                         </p>
-                        <input type="file" name="file" class="form-control" accept=".csv,.xlsx,.xls" required>
+                        <input type="file" name="file" class="form-control" accept=".csv,.txt" required>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>

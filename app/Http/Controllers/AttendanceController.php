@@ -80,8 +80,8 @@ class AttendanceController extends Controller
      */
     public function show(Attendance $attendance)
     {
-        $this->authorize('view', $attendance);
-        return view('attendance.show', compact('attendance'));
+        abort_if(Auth::user()->role !== 'admin' && $attendance->user_id !== Auth::id(), 403);
+        return redirect()->route('attendance.edit', $attendance);
     }
 
     /**
@@ -89,7 +89,7 @@ class AttendanceController extends Controller
      */
     public function edit(Attendance $attendance)
     {
-        $this->authorize('update', $attendance);
+        abort_if(Auth::user()->role !== 'admin', 403);
         $users = User::where('role', 'user')->get();
         return view('attendance.edit', compact('attendance', 'users'));
     }
@@ -99,7 +99,7 @@ class AttendanceController extends Controller
      */
     public function update(Request $request, Attendance $attendance)
     {
-        $this->authorize('update', $attendance);
+        abort_if(Auth::user()->role !== 'admin', 403);
         
         $validated = $request->validate([
             'time_in' => 'nullable|date_format:H:i',
@@ -118,7 +118,7 @@ class AttendanceController extends Controller
      */
     public function destroy(Attendance $attendance)
     {
-        $this->authorize('delete', $attendance);
+        abort_if(Auth::user()->role !== 'admin', 403);
         $attendance->delete();
 
         return redirect()->route('attendance.index')->with('success', 'Attendance deleted successfully');

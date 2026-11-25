@@ -72,32 +72,32 @@
                                         <td><code>{{ $student->nim }}</code></td>
                                         <td>{{ $student->email }}</td>
                                         <td>{{ $student->created_at->format('d M Y H:i') }}</td>
-                                        <form action="{{ route('users.assignClass', $student->id) }}" method="POST">
-                                            @csrf
-                                            <td>
-                                                <select name="department_id" class="form-select form-select-sm" required id="dept-select-{{ $student->id }}" onchange="filterClassesForStudent({{ $student->id }})">
-                                                    <option value="" disabled selected>-- Pilih Prodi --</option>
-                                                    @foreach($allDepartments as $dept)
-                                                        <option value="{{ $dept->id }}">{{ $dept->name }}</option>
-                                                    @endforeach
-                                                </select>
-                                            </td>
-                                            <td>
-                                                <select name="class_id" class="form-select form-select-sm" required id="class-select-{{ $student->id }}">
-                                                    <option value="" disabled selected>-- Pilih Kelas --</option>
-                                                    @foreach($allClasses as $kelas)
-                                                        <option value="{{ $kelas->id }}" data-dept="{{ $kelas->department_id }}" style="display: none;">
-                                                            Kelas {{ $kelas->nomor_kelas }} (Sem. {{ $kelas->semester }})
-                                                        </option>
-                                                    @endforeach
-                                                </select>
-                                            </td>
-                                            <td class="text-end">
-                                                <button type="submit" class="btn btn-sm btn-success">
-                                                    <i class="fas fa-check-circle me-1"></i> Setujui & Tempatkan
-                                                </button>
-                                            </td>
-                                        </form>
+                                        <td>
+                                            <form id="assign-form-{{ $student->id }}" action="{{ route('users.assignClass', $student->id) }}" method="POST">
+                                                @csrf
+                                            </form>
+                                            <select name="department_id" form="assign-form-{{ $student->id }}" class="form-select form-select-sm" required id="dept-select-{{ $student->id }}" onchange="filterClassesForStudent({{ $student->id }})">
+                                                <option value="" disabled selected>-- Pilih Prodi --</option>
+                                                @foreach($allDepartments as $dept)
+                                                    <option value="{{ $dept->id }}">{{ $dept->name }}</option>
+                                                @endforeach
+                                            </select>
+                                        </td>
+                                        <td>
+                                            <select name="class_id" form="assign-form-{{ $student->id }}" class="form-select form-select-sm" required id="class-select-{{ $student->id }}">
+                                                <option value="" disabled selected>-- Pilih Kelas --</option>
+                                                @foreach($allClasses as $kelas)
+                                                    <option value="{{ $kelas->id }}" data-dept="{{ $kelas->department_id }}" style="display: none;">
+                                                        Kelas {{ $kelas->nomor_kelas }} (Sem. {{ $kelas->semester }})
+                                                    </option>
+                                                @endforeach
+                                            </select>
+                                        </td>
+                                        <td class="text-end">
+                                            <button type="submit" form="assign-form-{{ $student->id }}" class="btn btn-sm btn-success">
+                                                <i class="fas fa-check-circle me-1"></i> Setujui & Tempatkan
+                                            </button>
+                                        </td>
                                     </tr>
                                 @endforeach
                             </tbody>
@@ -208,7 +208,7 @@
                             <tbody>
                                 @forelse($recentAttendances as $attendance)
                                     <tr>
-                                        <td>{{ $attendance->user->name }}</td>
+                                        <td>{{ $attendance->user->name ?? '-' }}</td>
                                         <td>{{ $attendance->attendance_date->format('d M Y') }}</td>
                                         <td>{{ $attendance->time_in ?? '-' }}</td>
                                         <td>{{ $attendance->time_out ?? '-' }}</td>

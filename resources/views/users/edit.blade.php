@@ -27,7 +27,7 @@
                             <label for="nim" class="form-label">NIM (Nomor Induk Mahasiswa)</label>
                             <input type="text" name="nim" id="nim" 
                                    class="form-control @error('nim') is-invalid @enderror" 
-                                   value="{{ old('nim', $user->nim) }}" required>
+                                   value="{{ old('nim', $user->nim) }}" {{ $user->role === 'user' ? 'required' : '' }}>
                             @error('nim')
                                 <span class="invalid-feedback">{{ $message }}</span>
                             @enderror

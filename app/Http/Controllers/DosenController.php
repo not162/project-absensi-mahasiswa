@@ -92,6 +92,7 @@ class DosenController extends Controller
 
     public function show(User $dosen)
     {
+        abort_if($dosen->role !== 'dosen', 404);
         // ambil relasi schedules agar view tidak error
         $dosen->load('schedules.course');
         return view('admin.dosen.show', compact('dosen'));
@@ -99,6 +100,7 @@ class DosenController extends Controller
 
     public function edit(User $dosen)
     {
+        abort_if($dosen->role !== 'dosen', 404);
         $departments = Department::all();
 
         return view('admin.dosen.edit', compact('dosen', 'departments'));
@@ -106,6 +108,7 @@ class DosenController extends Controller
 
     public function update(Request $request, User $dosen)
     {
+        abort_if($dosen->role !== 'dosen', 404);
         $validated = $request->validate([
             'kode_dosen' => 'required|string|max:255|unique:users,kode_dosen,' . $dosen->id,
             'name' => 'required|string|max:255',

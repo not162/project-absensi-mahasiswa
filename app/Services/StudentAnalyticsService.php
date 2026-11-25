@@ -17,46 +17,42 @@ class StudentAnalyticsService
      */
     public function analyze(User $student): array
     {
-        // 1. Calculate Attendance Rate
+        // 1. Calculate Attendance Rate & Assignment Submission Rate
         $attendanceRate = 0.0;
         $totalMeetingsCount = 0;
         $attendedMeetingsCount = 0;
-        
+        $submissionRate = 0.0;
+        $averageAssignmentGrade = 0.0;
+        $totalAssignmentsCount = 0;
+        $submittedCount = 0;
+        $gradedSubmissionsCount = 0;
+
         if ($student->class_id) {
             $scheduleIds = Schedule::where('class_id', $student->class_id)->pluck('id');
-            $meetings = ClassMeeting::whereIn('schedule_id', $scheduleIds)->get();
-            $totalMeetingsCount = $meetings->count();
-            
+            $meetingIds = ClassMeeting::whereIn('schedule_id', $scheduleIds)->pluck('id');
+            $totalMeetingsCount = $meetingIds->count();
+
             if ($totalMeetingsCount > 0) {
-                $attendedMeetingsCount = StudentAttendance::whereIn('meeting_id', $meetings->pluck('id'))
+                $attendedMeetingsCount = StudentAttendance::whereIn('meeting_id', $meetingIds)
                     ->where('student_id', $student->id)
                     ->where('status', 'hadir')
                     ->count();
                 $attendanceRate = ($attendedMeetingsCount / $totalMeetingsCount) * 100;
             }
-        }
 
-        // 2. Calculate Assignment Submission Rate & Avg Score
-        $submissionRate = 0.0;
-        $averageAssignmentGrade = 0.0;
-        $totalAssignmentsCount = 0;
-        $submittedCount = 0;
-        
-        if ($student->class_id) {
-            $scheduleIds = Schedule::where('class_id', $student->class_id)->pluck('id');
-            $meetingIds = ClassMeeting::whereIn('schedule_id', $scheduleIds)->pluck('id');
-            $assignments = Assignment::whereIn('meeting_id', $meetingIds)->get();
-            $totalAssignmentsCount = $assignments->count();
-            
+            $assignmentIds = Assignment::whereIn('meeting_id', $meetingIds)->pluck('id');
+            $totalAssignmentsCount = $assignmentIds->count();
+
             if ($totalAssignmentsCount > 0) {
-                $submissions = \App\Models\AssignmentSubmission::whereIn('assignment_id', $assignments->pluck('id'))
+                $submissions = \App\Models\AssignmentSubmission::whereIn('assignment_id', $assignmentIds)
                     ->where('student_id', $student->id)
                     ->get();
                 $submittedCount = $submissions->count();
                 $submissionRate = ($submittedCount / $totalAssignmentsCount) * 100;
-                
+
                 $gradedSubmissions = $submissions->whereNotNull('nilai');
-                if ($gradedSubmissions->count() > 0) {
+                $gradedSubmissionsCount = $gradedSubmissions->count();
+                if ($gradedSubmissionsCount > 0) {
                     $averageAssignmentGrade = $gradedSubmissions->avg('nilai');
                 }
             }
@@ -66,44 +62,56 @@ class StudentAnalyticsService
         $grades = Grade::where('user_id', $student->id)->get();
         $averageExamGrade = 0.0;
         if ($grades->count() > 0) {
-            $averageExamGrade = $grades->avg('nilai_akhir');
+            $averageExamGrade = (float) $grades->avg('nilai_akhir');
         }
 
         // 4. Calculate Repeats History
         $pendingRepeatsCount = CourseRepeat::where('user_id', $student->id)->where('status', 'pending')->count();
-        $approvedRepeatsCount = CourseRepeat::where('user_id', $student->id)->where('status', 'approved')->count();
+        $approvedRepeatsCount = CourseRepeat::where('user_id', $student->id)->where('status', 'disetujui')->count();
 
         // 5. Data Science Risk Scoring Model (Decision scoring classifier)
         $riskScore = 0;
         $reasons = [];
 
-        // Feature: Attendance Impact
-        if ($attendanceRate < 75.0) {
-            $riskScore += 40;
-            $reasons[] = "Tingkat kehadiran di bawah 75% ({$attendedMeetingsCount}/{$totalMeetingsCount} pertemuan).";
-        } elseif ($attendanceRate < 85.0) {
-            $riskScore += 20;
-            $reasons[] = "Tingkat kehadiran kurang optimal ({$attendanceRate}%).";
+        $roundedAttendance = round($attendanceRate, 1);
+        $roundedSubmission = round($submissionRate, 1);
+
+        // Feature: Attendance Impact (only penalize when meetings exist)
+        if ($totalMeetingsCount > 0) {
+            if ($attendanceRate < 75.0) {
+                $riskScore += 40;
+                $reasons[] = "Tingkat kehadiran di bawah 75% ({$attendedMeetingsCount}/{$totalMeetingsCount} pertemuan).";
+            } elseif ($attendanceRate < 85.0) {
+                $riskScore += 20;
+                $reasons[] = "Tingkat kehadiran kurang optimal ({$roundedAttendance}%).";
+            }
         }
 
-        // Feature: Task Submission Impact
-        if ($submissionRate < 50.0) {
-            $riskScore += 30;
-            $reasons[] = "Mengabaikan lebih dari setengah tugas kuliah ({$submittedCount}/{$totalAssignmentsCount} dikumpulkan).";
-        } elseif ($submissionRate < 80.0) {
-            $riskScore += 15;
-            $reasons[] = "Beberapa tugas kuliah belum dikerjakan ({$submissionRate}% pengumpulan).";
+        // Feature: Task Submission Impact (only penalize when assignments exist)
+        if ($totalAssignmentsCount > 0) {
+            if ($submissionRate < 50.0) {
+                $riskScore += 30;
+                $reasons[] = "Mengabaikan lebih dari setengah tugas kuliah ({$submittedCount}/{$totalAssignmentsCount} dikumpulkan).";
+            } elseif ($submissionRate < 80.0) {
+                $riskScore += 15;
+                $reasons[] = "Beberapa tugas kuliah belum dikerjakan ({$roundedSubmission}% pengumpulan).";
+            }
         }
 
         // Feature: Grade Quality Impact
-        $combinedGrade = ($averageExamGrade > 0) ? ($averageExamGrade * 0.7 + $averageAssignmentGrade * 0.3) : $averageAssignmentGrade;
-        if ($combinedGrade > 0) {
+        $hasGrades = ($grades->count() > 0 || $gradedSubmissionsCount > 0);
+        $combinedGrade = ($averageExamGrade > 0)
+            ? ($gradedSubmissionsCount > 0 ? ($averageExamGrade * 0.7 + $averageAssignmentGrade * 0.3) : $averageExamGrade)
+            : $averageAssignmentGrade;
+        $roundedCombined = round($combinedGrade, 1);
+
+        if ($hasGrades) {
             if ($combinedGrade < 60) {
                 $riskScore += 30;
-                $reasons[] = "Rata-rata akumulasi nilai di bawah batas kelulusan ({$combinedGrade}).";
+                $reasons[] = "Rata-rata akumulasi nilai di bawah batas kelulusan ({$roundedCombined}).";
             } elseif ($combinedGrade < 75) {
                 $riskScore += 15;
-                $reasons[] = "Performa nilai berada di kategori menengah ({$combinedGrade}).";
+                $reasons[] = "Performa nilai berada di kategori menengah ({$roundedCombined}).";
             }
         }
 
@@ -112,6 +120,8 @@ class StudentAnalyticsService
             $riskScore += 10;
             $reasons[] = "Memiliki riwayat pengulangan mata kuliah aktif.";
         }
+
+        $riskScore = min(100, $riskScore);
 
         // Output Classification
         if ($riskScore >= 50) {
@@ -128,13 +138,14 @@ class StudentAnalyticsService
             $recommendation = "Status luar biasa! Pertahankan kinerja akademik saat ini untuk meraih hasil terbaik.";
         }
 
-         // STARS Algorithm Rating System
+        // STARS Algorithm Rating System
         $starsCount = 5;
         $decisionInput = [];
-        $decisionOutput = "";
 
         // Factor 1: Attendance
-        if ($attendanceRate >= 90.0) {
+        if ($totalMeetingsCount === 0) {
+            $decisionInput['attendance'] = 'Belum Ada Pertemuan';
+        } elseif ($attendanceRate >= 90.0) {
             $decisionInput['attendance'] = 'Sangat Aktif (>= 90%)';
         } elseif ($attendanceRate >= 75.0) {
             $decisionInput['attendance'] = 'Cukup Aktif (75% - 89%)';
@@ -145,7 +156,9 @@ class StudentAnalyticsService
         }
 
         // Factor 2: Assignment Submission
-        if ($submissionRate >= 90.0) {
+        if ($totalAssignmentsCount === 0) {
+            $decisionInput['submission'] = 'Belum Ada Tugas';
+        } elseif ($submissionRate >= 90.0) {
             $decisionInput['submission'] = 'Sangat Patuh (>= 90%)';
         } elseif ($submissionRate >= 70.0) {
             $decisionInput['submission'] = 'Cukup Patuh (70% - 89%)';
@@ -156,8 +169,9 @@ class StudentAnalyticsService
         }
 
         // Factor 3: Grades
-        $combinedGrade = ($averageExamGrade > 0) ? ($averageExamGrade * 0.7 + $averageAssignmentGrade * 0.3) : $averageAssignmentGrade;
-        if ($combinedGrade >= 80.0) {
+        if (!$hasGrades) {
+            $decisionInput['grades'] = 'Belum Ada Nilai';
+        } elseif ($combinedGrade >= 80.0) {
             $decisionInput['grades'] = 'Sangat Baik (>= 80)';
         } elseif ($combinedGrade >= 60.0) {
             $decisionInput['grades'] = 'Cukup/C (60 - 79)';

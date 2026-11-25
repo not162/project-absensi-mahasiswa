@@ -143,7 +143,7 @@
 
                     <div class="col-md-4" id="replacementDateField" style="display: none;">
                         <label class="form-label fw-semibold">Tanggal Kelas Pengganti <span class="text-danger">*</span></label>
-                        <input type="date" name="replacement_date" id="replacement_date" class="form-control" value="{{ $schedule->replacement_date }}">
+                        <input type="date" name="replacement_date" id="replacement_date" class="form-control" value="{{ old('replacement_date', $schedule->replacement_date?->format('Y-m-d')) }}">
                     </div>
                     @endif
                 </div>

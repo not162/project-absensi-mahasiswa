@@ -21,7 +21,15 @@ class Schedule extends Model
         'link_online',
         'kode_online',
         'tahun_ajaran',
+        'is_replacement',
+        'replacement_date',
         'absen_darimana_saja',
+    ];
+
+    protected $casts = [
+        'is_replacement' => 'boolean',
+        'replacement_date' => 'date',
+        'absen_darimana_saja' => 'boolean',
     ];
 
     /** Mata kuliah yang dijadwalkan */

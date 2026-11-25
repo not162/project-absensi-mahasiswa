@@ -12,8 +12,8 @@ class VectorSearchService
 
     public function __construct()
     {
-        $this->apiKey = env('GROQ_API_KEY');
-        $this->model = env('GROQ_MODEL', 'llama-3.3-70b-versatile');
+        $this->apiKey = config('services.groq.key');
+        $this->model = config('services.groq.model', 'llama-3.3-70b-versatile');
     }
 
     /**
@@ -55,19 +55,21 @@ Anda adalah mesin pencari semantik akademis Universitas Tangsel Raya.
 Tugas Anda adalah membandingkan kata kunci pencarian (Query) dengan daftar mata kuliah, lalu menilai tingkat kemiripan makna/konsep semantik (skor 0.0 sampai 1.0) untuk setiap mata kuliah.
 Kemiripan konsep dinilai dari keterkaitan materi, bukan kecocokan kata persis (misal: "membuat website" sangat mirip dengan "Pemrograman Web").
 
-Keluaran Anda WAJIB berupa JSON array objek berisi id dan score saja, terurut dari score tertinggi ke terendah, dan hanya berisi mata kuliah dengan score > 0.1. Maksimum output adalah {$limit} item.
-Jangan berikan teks penjelasan, markdown wrap, atau prolog apapun di luar JSON array.
+Keluaran Anda WAJIB berupa JSON object dengan key "results" berisi array objek id dan score saja, terurut dari score tertinggi ke terendah, dan hanya berisi mata kuliah dengan score > 0.1. Maksimum output adalah {$limit} item.
+Jangan berikan teks penjelasan, markdown wrap, atau prolog apapun di luar JSON.
 
 Contoh format keluaran:
-[
-  {"id": 1, "score": 0.85},
-  {"id": 3, "score": 0.62}
-]
+{
+  "results": [
+    {"id": 1, "score": 0.85},
+    {"id": 3, "score": 0.62}
+  ]
+}
 PROMPT;
 
         $userPrompt = "Daftar Mata Kuliah:\n" . json_encode($compactDocs) . "\n\nQuery Pencarian: \"{$query}\"";
 
-        $response = Http::withHeaders([
+        $response = Http::timeout(10)->withHeaders([
             'Authorization' => 'Bearer ' . $this->apiKey,
             'Content-Type' => 'application/json',
         ])->post('https://api.groq.com/openai/v1/chat/completions', [
@@ -85,30 +87,40 @@ PROMPT;
             $rawText = $response->json()['choices'][0]['message']['content'] ?? '';
             
             // Clean markdown blocks if LLM still wraps it
-            if (strpos($rawText, '```json') !== false) {
+            if (strpos($rawText, '```json') !== false || strpos($rawText, '```') !== false) {
                 $rawText = str_replace(['```json', '```'], '', $rawText);
             }
             
             $ranking = json_decode(trim($rawText), true);
             
-            // If json_object returned a wrapped structure (e.g. {"results": [...]})
-            if (isset($ranking['results'])) {
-                $ranking = $ranking['results'];
+            // If json_object returned a wrapped structure (e.g. {"results": [...]} or {"courses": [...]})
+            if (is_array($ranking) && !array_is_list($ranking)) {
+                if (isset($ranking['results']) && is_array($ranking['results'])) {
+                    $ranking = $ranking['results'];
+                } else {
+                    foreach ($ranking as $val) {
+                        if (is_array($val) && array_is_list($val)) {
+                            $ranking = $val;
+                            break;
+                        }
+                    }
+                }
             }
 
             if (is_array($ranking)) {
                 $mappedResults = [];
+                $docsById = collect($documents)->keyBy('id');
                 // Re-associate scores with original document attributes (sks, semester, prodi)
                 foreach ($ranking as $item) {
-                    if (isset($item['id']) && isset($item['score'])) {
-                        $originalDoc = collect($documents)->firstWhere('id', $item['id']);
+                    if (is_array($item) && isset($item['id'], $item['score']) && (float) $item['score'] > 0.1) {
+                        $originalDoc = $docsById->get($item['id']);
                         if ($originalDoc) {
                             $originalDoc['score'] = (float) $item['score'];
                             $mappedResults[] = $originalDoc;
                         }
                     }
                 }
-                return $mappedResults;
+                return array_slice($mappedResults, 0, $limit);
             }
         }
 
@@ -138,9 +150,9 @@ PROMPT;
      */
     private function getVector(string $text): array
     {
-        $text = strtolower(preg_replace('/[^a-z0-9\s]/', '', $text));
-        $words = explode(' ', $text);
-        $words = array_filter($words, fn($w) => strlen($w) > 2);
+        $text = preg_replace('/[^a-z0-9\s]/', ' ', strtolower($text));
+        $words = preg_split('/\s+/', trim($text), -1, PREG_SPLIT_NO_EMPTY);
+        $words = array_filter($words, fn($w) => strlen($w) >= 2);
         
         $vector = [];
         foreach ($words as $word) {

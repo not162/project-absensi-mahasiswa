@@ -70,6 +70,7 @@ class StemExamController extends Controller
     public function submit(Request $request, int $attemptId)
     {
         $attempt = StemAttempt::findOrFail($attemptId);
+        abort_if($attempt->user_id !== Auth::id() && Auth::user()->role !== 'admin', 403);
         
         if ($attempt->status == 'completed') {
             return redirect()->route('stem.result', $attempt->id);
@@ -145,6 +146,7 @@ class StemExamController extends Controller
     public function result(int $attemptId)
     {
         $attempt = StemAttempt::with('exam', 'answers.question')->findOrFail($attemptId);
+        abort_if($attempt->user_id !== Auth::id() && Auth::user()->role !== 'admin', 403);
         
         // Ambil semua modul belajar untuk memetakan nama node dengan ketersediaan modul
         $availableModules = \App\Models\LearningModule::all()->keyBy('category_stem');
@@ -155,7 +157,9 @@ class StemExamController extends Controller
     public function printPdf(int $attemptId)
     {
         $attempt = StemAttempt::with('exam', 'answers.question', 'user.department')->findOrFail($attemptId);
+        abort_if($attempt->user_id !== Auth::id() && Auth::user()->role !== 'admin', 403);
+
         $pdf = Pdf::loadView('mahasiswa.stem_exam.pdf', compact('attempt'));
-        return $pdf->download('Hasil_Ujian_STEM_' . $attempt->user->nim . '.pdf');
+        return $pdf->download('Hasil_Ujian_STEM_' . ($attempt->user->nim ?? 'mahasiswa') . '.pdf');
     }
 }

@@ -50,7 +50,7 @@
                                 <small class="text-muted">NIM: {{ $rep->student->nim ?? '-' }}</small>
                             </td>
                             <td>
-                                @if($rep->student->kelas)
+                                @if($rep->student?->kelas)
                                     Semester {{ $rep->student->kelas->semester }} - Kelas {{ $rep->student->kelas->nomor_kelas }}
                                 @else
                                     -

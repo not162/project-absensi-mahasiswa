@@ -185,6 +185,7 @@ document.addEventListener("DOMContentLoaded", function() {
                         // Cek apakah mahasiswa ini sudah ditandai "Sudah Kumpul" di UI
                         let badgeStatus = document.getElementById(`status-badge-${studentId}`);
                         if(badgeStatus && badgeStatus.innerText === 'Belum Kumpul') {
+                            const esc = (s) => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
                             // Update badge
                             badgeStatus.className = 'badge bg-success';
                             badgeStatus.innerText = 'Sudah Kumpul';
@@ -193,10 +194,10 @@ document.addEventListener("DOMContentLoaded", function() {
                             let fileTd = document.getElementById(`file-td-${studentId}`);
                             if(fileTd) {
                                 fileTd.innerHTML = `
-                                    <a href="${sub.file_url}" target="_blank" class="small">
-                                        <i class="fas fa-file-download me-1"></i>${sub.file_name}
+                                    <a href="${esc(sub.file_url)}" target="_blank" class="small">
+                                        <i class="fas fa-file-download me-1"></i>${esc(sub.file_name)}
                                     </a>
-                                    ${sub.catatan ? `<div class="text-muted small mt-1"><i class="fas fa-sticky-note me-1"></i>${sub.catatan}</div>` : ''}
+                                    ${sub.catatan ? `<div class="text-muted small mt-1"><i class="fas fa-sticky-note me-1"></i>${esc(sub.catatan)}</div>` : ''}
                                 `;
                             }
                             
@@ -208,7 +209,7 @@ document.addEventListener("DOMContentLoaded", function() {
                             let nilaiTd = document.getElementById(`nilai-td-${studentId}`);
                             if(nilaiTd && nilaiTd.innerHTML.includes('Belum bisa dinilai')) {
                                 nilaiTd.innerHTML = `
-                                    <form action="{{ url('/assignments/submission') }}/${studentId}/nilai" method="POST" class="d-flex gap-1">
+                                    <form action="{{ url('/assignments/submission') }}/${sub.id}/nilai" method="POST" class="d-flex gap-1">
                                         @csrf
                                         <input type="number" name="nilai" class="form-control form-control-sm" style="width:80px"
                                                min="0" max="100" step="0.01" value="" placeholder="0-100" required>

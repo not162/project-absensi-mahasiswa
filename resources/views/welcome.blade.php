@@ -342,8 +342,8 @@
         document.addEventListener("DOMContentLoaded", function() {
             const publicMapEl = document.getElementById('public-map');
             if (publicMapEl) {
-                const campusLat = {{ env('CAMPUS_LATITUDE', -6.3428) }};
-                const campusLng = {{ env('CAMPUS_LONGITUDE', 106.7383) }};
+                const campusLat = {{ config('services.campus.latitude', -6.3428) }};
+                const campusLng = {{ config('services.campus.longitude', 106.7383) }};
                 
                 const publicMap = L.map('public-map', {
                     zoomControl: true,

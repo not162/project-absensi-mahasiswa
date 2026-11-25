@@ -20,6 +20,7 @@ class AssignmentSubmissionController extends Controller
             ->get()
             ->map(function ($sub) {
                 return [
+                    'id' => $sub->id,
                     'student_id' => $sub->student_id,
                     'file_url' => asset('storage/' . $sub->file_tugas),
                     'file_name' => $sub->file_tugas_original,

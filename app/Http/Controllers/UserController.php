@@ -52,42 +52,55 @@ class UserController extends Controller
         return view('users.export-pdf', compact('users'));
     }
 
-    /** Import data mahasiswa dari file CSV/Excel (format: nim,name,email,phone,department_id,class_id) */
+    /** Import data mahasiswa dari file CSV (format: nim,name,email,phone,department_id,class_id) */
     public function importExcel(Request $request)
     {
         $request->validate([
-            'file' => 'required|file|mimes:csv,txt,xlsx,xls|max:5120',
+            'file' => 'required|file|mimes:csv,txt|max:5120',
+        ], [
+            'file.mimes' => 'Format file harus berupa CSV (.csv / .txt). Silakan simpan spreadsheet Anda sebagai CSV terlebih dahulu.',
         ]);
 
         $path = $request->file('file')->getRealPath();
         $rows = array_map('str_getcsv', file($path));
-        $header = array_map('trim', array_shift($rows));
+        if (empty($rows)) {
+            return redirect()->route('users.index')->with('error', 'File CSV kosong.');
+        }
+
+        $header = array_map(function ($h) {
+            return trim(preg_replace('/^\xEF\xBB\xBF/', '', (string) $h));
+        }, array_shift($rows));
 
         $imported = 0;
         $skipped = 0;
 
         foreach ($rows as $row) {
-            if (count($row) < 2 || empty(trim($row[0] ?? ''))) {
+            if (count($row) < 2 || ($row === [null]) || empty(trim(implode('', $row)))) {
                 continue;
             }
 
-            $data = array_combine($header, array_pad($row, count($header), null));
+            $padded = array_slice(array_pad($row, count($header), null), 0, count($header));
+            $data = array_combine($header, $padded);
 
-            if (empty($data['email']) || User::where('email', $data['email'])->exists()
-                || (!empty($data['nim']) && User::where('nim', $data['nim'])->exists())) {
+            $email = trim((string) ($data['email'] ?? ''));
+            $nim = !empty($data['nim']) ? trim((string) $data['nim']) : null;
+
+            if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)
+                || User::where('email', $email)->exists()
+                || ($nim !== null && User::where('nim', $nim)->exists())) {
                 $skipped++;
                 continue;
             }
 
             User::create([
-                'name'          => $data['name'] ?? 'Tanpa Nama',
-                'email'         => $data['email'],
-                'nim'           => $data['nim'] ?? null,
-                'phone'         => $data['phone'] ?? null,
+                'name'          => trim((string) ($data['name'] ?? '')) ?: 'Tanpa Nama',
+                'email'         => $email,
+                'nim'           => $nim,
+                'phone'         => !empty($data['phone']) ? trim((string) $data['phone']) : null,
                 'role'          => 'user',
                 'password'      => Hash::make('password'),
-                'department_id' => $data['department_id'] ?? null,
-                'class_id'      => $data['class_id'] ?? null,
+                'department_id' => !empty($data['department_id']) ? (int) $data['department_id'] : null,
+                'class_id'      => !empty($data['class_id']) ? (int) $data['class_id'] : null,
             ]);
 
             $imported++;
@@ -115,7 +128,7 @@ public function store(Request $request)
         'nim'           => 'nullable|string|unique:users',
         'phone'         => 'nullable|string',
         'role'          => 'required|in:admin,user',
-        'password'      => 'required|min:6',
+        'password'      => 'required|min:6|confirmed',
         'department_id' => 'nullable|exists:departments,id',
         'class_id'      => 'nullable|exists:classes,id',
     ]);
@@ -152,6 +165,7 @@ public function update(Request $request, User $user)
         'nim'           => 'nullable|string|unique:users,nim,'.$user->id,
         'phone'         => 'nullable|string',
         'role'          => 'required|in:admin,user',
+        'password'      => 'nullable|min:6|confirmed',
         'department_id' => 'nullable|exists:departments,id',
         'class_id'      => 'nullable|exists:classes,id',
     ]);
@@ -164,7 +178,7 @@ public function update(Request $request, User $user)
         'role'          => $request->role,
         'department_id' => $request->department_id,
         'class_id'      => $request->class_id,
-        'password'      => $request->password ? bcrypt($request->password) : $user->password,
+        'password'      => $request->filled('password') ? bcrypt($request->password) : $user->password,
     ]);
 
     return redirect()->route('users.index')->with('success', 'User berhasil diupdate');

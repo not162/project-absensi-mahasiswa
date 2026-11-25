@@ -25,32 +25,32 @@ class SelfAttendanceController extends Controller
         $schedules = $kelas
             ? Schedule::with(['course', 'lecturer'])
                 ->where('class_id', $kelas->id)
-                ->orderByRaw("FIELD(hari,'Senin','Selasa','Rabu','Kamis','Jumat','Sabtu')")
+                ->orderByRaw("CASE hari WHEN 'Senin' THEN 1 WHEN 'Selasa' THEN 2 WHEN 'Rabu' THEN 3 WHEN 'Kamis' THEN 4 WHEN 'Jumat' THEN 5 WHEN 'Sabtu' THEN 6 WHEN 'Minggu' THEN 7 ELSE 8 END")
                 ->orderBy('jam_mulai')
                 ->get()
             : collect();
 
         // Cek absen hari ini & seluruh tugas (dari semua pertemuan) per jadwal
-        $attendanceStatus  = [];
-        $meetingData       = [];
+        $attendanceStatus    = [];
+        $todayAttendances    = [];
+        $meetingData         = [];
         $assignmentsByJadwal = [];
 
         foreach ($schedules as $schedule) {
             $isHariIni = ($hariIni === $schedule->hari);
-            
-            if ($isHariIni) {
-                $meeting = ClassMeeting::firstOrCreate(
-                    ['schedule_id' => $schedule->id, 'tanggal' => $today],
-                    [
-                        'lecturer_id'   => $schedule->user_id,
-                        'pertemuan_ke'  => ClassMeeting::where('schedule_id', $schedule->id)->count() + 1,
-                        'materi'        => '',
-                    ]
-                );
-            } else {
-                $meeting = ClassMeeting::where('schedule_id', $schedule->id)
-                    ->whereDate('tanggal', $today)
-                    ->first();
+
+            $meeting = ClassMeeting::where('schedule_id', $schedule->id)
+                ->whereDate('tanggal', $today)
+                ->first();
+
+            if ($isHariIni && !$meeting) {
+                $meeting = ClassMeeting::create([
+                    'schedule_id'  => $schedule->id,
+                    'tanggal'      => $today->toDateString(),
+                    'lecturer_id'  => $schedule->user_id,
+                    'pertemuan_ke' => (ClassMeeting::where('schedule_id', $schedule->id)->max('pertemuan_ke') ?? 0) + 1,
+                    'materi'       => '',
+                ]);
             }
 
             $meetingData[$schedule->id] = $meeting;
@@ -60,6 +60,7 @@ class SelfAttendanceController extends Controller
                     ->where('student_id', $user->id)
                     ->first();
                 $attendanceStatus[$schedule->id] = $absen?->status;
+                $todayAttendances[$schedule->id] = $absen;
             }
 
             // Semua tugas dari semua pertemuan jadwal ini (bukan cuma hari ini)
@@ -74,7 +75,7 @@ class SelfAttendanceController extends Controller
 
         return view('mahasiswa.jadwal', compact(
             'schedules', 'hariIni', 'today',
-            'attendanceStatus', 'meetingData', 'assignmentsByJadwal', 'user'
+            'attendanceStatus', 'todayAttendances', 'meetingData', 'assignmentsByJadwal', 'user'
         ));
     }
 
@@ -97,14 +98,19 @@ class SelfAttendanceController extends Controller
         abort_if($schedule->class_id !== $user->class_id, 403);
 
         // Cari atau buat pertemuan hari ini secara otomatis
-        $meeting = ClassMeeting::firstOrCreate(
-            ['schedule_id' => $schedule->id, 'tanggal' => $today],
-            [
-                'lecturer_id'   => $schedule->user_id,
-                'pertemuan_ke'  => ClassMeeting::where('schedule_id', $schedule->id)->count() + 1,
-                'materi'        => '',
-            ]
-        );
+        $meeting = ClassMeeting::where('schedule_id', $schedule->id)
+            ->whereDate('tanggal', $today)
+            ->first();
+
+        if (!$meeting) {
+            $meeting = ClassMeeting::create([
+                'schedule_id'  => $schedule->id,
+                'tanggal'      => $today->toDateString(),
+                'lecturer_id'  => $schedule->user_id,
+                'pertemuan_ke' => (ClassMeeting::where('schedule_id', $schedule->id)->max('pertemuan_ke') ?? 0) + 1,
+                'materi'       => '',
+            ]);
+        }
 
         // Validasi Geolocation dinonaktifkan atas permintaan user agar mahasiswa bisa absen dari mana saja tanpa kendala jarak.
         if ($request->status === 'hadir') {
@@ -200,6 +206,8 @@ class SelfAttendanceController extends Controller
     public function toeflResult(int $id)
     {
         $result = \App\Models\ToeflResult::findOrFail($id);
+        abort_if($result->user_id !== Auth::id() && Auth::user()->role !== 'admin', 403);
+
         $questions = $this->getMockToeflQuestions();
         return view('mahasiswa.toefl_result', compact('result', 'questions'));
     }
@@ -339,6 +347,9 @@ class SelfAttendanceController extends Controller
         ]);
 
         $user  = Auth::user();
+        $schedule = Schedule::findOrFail($request->schedule_id);
+        abort_if($schedule->class_id !== $user->class_id, 403);
+
         $today = Carbon::today();
 
         $meeting = ClassMeeting::where('schedule_id', $request->schedule_id)

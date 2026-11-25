@@ -38,6 +38,9 @@ class ExamReplacementController extends Controller
             'bukti_foto'       => 'required|image|mimes:jpg,jpeg,png|max:2048',
         ]);
 
+        $examSchedule = ExamSchedule::findOrFail($request->exam_schedule_id);
+        abort_if($examSchedule->class_id !== Auth::user()->class_id, 403);
+
         $path = null;
         if ($request->hasFile('bukti_foto')) {
             $path = $request->file('bukti_foto')->store('bukti-ujian-pengganti', 'public');
@@ -54,14 +57,49 @@ class ExamReplacementController extends Controller
         return redirect()->route('exam.replacement.index')->with('success', 'Pengajuan ujian pengganti berhasil dikirim.');
     }
 
+    private function canManageReplacement(ExamReplacement $replacement): bool
+    {
+        $user = Auth::user();
+        if ($user->role === 'admin') {
+            return true;
+        }
+        $exam = $replacement->examSchedule;
+        if (!$exam) {
+            return false;
+        }
+        if ($exam->pengawas_id === $user->id) {
+            return true;
+        }
+        return \App\Models\Schedule::where('user_id', $user->id)
+            ->where('course_id', $exam->course_id)
+            ->where('class_id', $exam->class_id)
+            ->exists();
+    }
+
     /** Admin & Dosen: Daftar pengajuan */
     public function adminIndex(Request $request)
     {
+        $user = Auth::user();
         $status = $request->get('status');
 
         $query = ExamReplacement::with(['student.kelas', 'examSchedule.course']);
         if ($status) {
             $query->where('status', $status);
+        }
+
+        if ($user->role === 'dosen') {
+            $taughtPairs = \App\Models\Schedule::where('user_id', $user->id)
+                ->get(['course_id', 'class_id']);
+
+            $query->whereHas('examSchedule', function ($q) use ($user, $taughtPairs) {
+                $q->where('pengawas_id', $user->id);
+                foreach ($taughtPairs as $pair) {
+                    $q->orWhere(function ($sub) use ($pair) {
+                        $sub->where('course_id', $pair->course_id)
+                            ->where('class_id', $pair->class_id);
+                    });
+                }
+            });
         }
 
         $replacements = $query->orderBy('created_at', 'desc')->get();
@@ -72,6 +110,7 @@ class ExamReplacementController extends Controller
     /** Admin & Dosen: Setujui pengajuan */
     public function approve(ExamReplacement $replacement)
     {
+        abort_if(!$this->canManageReplacement($replacement), 403);
         $replacement->update(['status' => 'approved']);
         return redirect()->back()->with('success', 'Pengajuan ujian pengganti berhasil disetujui.');
     }
@@ -79,6 +118,7 @@ class ExamReplacementController extends Controller
     /** Admin & Dosen: Tolak pengajuan */
     public function reject(ExamReplacement $replacement)
     {
+        abort_if(!$this->canManageReplacement($replacement), 403);
         $replacement->update(['status' => 'rejected']);
         return redirect()->back()->with('success', 'Pengajuan ujian pengganti berhasil ditolak.');
     }

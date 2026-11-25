@@ -110,12 +110,16 @@
             @else
                 <li class="nav-item"><a class="nav-link text-dark py-2 px-3 rounded d-flex align-items-center gap-2 hover-bg" href="{{ route('dashboard') }}"><i class="fas fa-home text-info w-20"></i> Dashboard</a></li>
                 <li class="nav-item"><a class="nav-link text-dark py-2 px-3 rounded d-flex align-items-center gap-2 hover-bg" href="{{ route('profile.show') }}"><i class="fas fa-user-circle text-info w-20"></i> Profil Saya</a></li>
-                <li class="nav-item"><a class="nav-link text-dark py-2 px-3 rounded d-flex align-items-center gap-2 hover-bg" href="{{ route('myuniv.ai') }}"><i class="fas fa-brain text-info w-20"></i> MyUniv AI Advisor</a></li>
+                <li class="nav-item"><a class="nav-link text-dark py-2 px-3 rounded d-flex align-items-center gap-2 hover-bg" href="{{ route('mahasiswa.jadwal') }}"><i class="fas fa-check-square text-info w-20"></i> Jadwal &amp; Absen</a></li>
+                <li class="nav-item"><a class="nav-link text-dark py-2 px-3 rounded d-flex align-items-center gap-2 hover-bg" href="{{ route('mahasiswa.jadwal_kelas') }}"><i class="fas fa-calendar-alt text-info w-20"></i> Jadwal Kuliah &amp; Kelas Pengganti</a></li>
+                <li class="nav-item"><a class="nav-link text-dark py-2 px-3 rounded d-flex align-items-center gap-2 hover-bg" href="{{ route('mahasiswa.rekap_absen') }}"><i class="fas fa-history text-info w-20"></i> Rekap Absensi</a></li>
+                <li class="nav-item"><a class="nav-link text-dark py-2 px-3 rounded d-flex align-items-center gap-2 hover-bg" href="{{ route('grades.my') }}"><i class="fas fa-star text-info w-20"></i> Nilai &amp; KHS</a></li>
+                <li class="nav-item"><a class="nav-link text-dark py-2 px-3 rounded d-flex align-items-center gap-2 hover-bg" href="{{ route('repeats.my') }}"><i class="fas fa-redo text-info w-20"></i> Pengulangan Matkul</a></li>
                 <li class="nav-item"><a class="nav-link text-dark py-2 px-3 rounded d-flex align-items-center gap-2 hover-bg" href="{{ route('exam.index', ['tipe' => 'uts']) }}"><i class="fas fa-file-alt text-info w-20"></i> Ujian</a></li>
+                <li class="nav-item"><a class="nav-link text-dark py-2 px-3 rounded d-flex align-items-center gap-2 hover-bg" href="{{ route('stem.index') }}"><i class="fas fa-laptop-code text-info w-20"></i> Ujian STEM</a></li>
                 <li class="nav-item"><a class="nav-link text-dark py-2 px-3 rounded d-flex align-items-center gap-2 hover-bg" href="{{ route('mahasiswa.toefl') }}"><i class="fas fa-language text-info w-20"></i> Ujian TOEFL/IELTS</a></li>
                 <li class="nav-item"><a class="nav-link text-dark py-2 px-3 rounded d-flex align-items-center gap-2 hover-bg" href="{{ route('exam.replacement.index') }}"><i class="fas fa-file-invoice text-info w-20"></i> Ujian Pengganti</a></li>
-                <li class="nav-item"><a class="nav-link text-dark py-2 px-3 rounded d-flex align-items-center gap-2 hover-bg" href="{{ route('mahasiswa.rekap_absen') }}"><i class="fas fa-history text-info w-20"></i> Rekap Absensi</a></li>
-                <li class="nav-item"><a class="nav-link text-dark py-2 px-3 rounded d-flex align-items-center gap-2 hover-bg" href="{{ route('mahasiswa.jadwal_kelas') }}"><i class="fas fa-calendar-alt text-info w-20"></i> Jadwal Kuliah & Kelas Pengganti</a></li>
+                <li class="nav-item"><a class="nav-link text-dark py-2 px-3 rounded d-flex align-items-center gap-2 hover-bg" href="{{ route('myuniv.ai') }}"><i class="fas fa-brain text-info w-20"></i> MyUniv AI Advisor</a></li>
             @endif
             <hr class="my-2">
             <li class="nav-item"><a class="nav-link text-warning py-2 px-3 rounded d-flex align-items-center gap-2 hover-bg" href="{{ route('semantic.search') }}"><i class="fas fa-search-plus w-20"></i> Cari Pintar (Vector)</a></li>

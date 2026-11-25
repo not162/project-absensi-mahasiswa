@@ -101,7 +101,7 @@
             <td>{{ $user->nim ?? '-' }}</td>
             <td class="font-bold">Program Studi</td>
             <td>:</td>
-            <td>{{ $user->kelas->department->name ?? '-' }}</td>
+            <td>{{ $user->department->name ?? $user->kelas?->department?->name ?? '-' }}</td>
         </tr>
         <tr>
             <td class="font-bold">Kelas</td>
@@ -136,15 +136,15 @@
                     $sks = $g->course->sks ?? 0;
                     $totalSks += $sks;
                     
-                    // Simple logic for Bobot, adjust if logic is different
-                    $bobot = 0;
-                    switch($g->nilai_huruf) {
-                        case 'A': $bobot = 4.0; break;
-                        case 'B': $bobot = 3.0; break;
-                        case 'C': $bobot = 2.0; break;
-                        case 'D': $bobot = 1.0; break;
-                        case 'E': $bobot = 0.0; break;
-                    }
+                    $bobot = match($g->grade_huruf) {
+                        'A'  => 4.0,
+                        'AB' => 3.5,
+                        'B'  => 3.0,
+                        'BC' => 2.5,
+                        'C'  => 2.0,
+                        'D'  => 1.0,
+                        default => 0.0,
+                    };
                     $totalBobotSks += ($bobot * $sks);
                 @endphp
                 <tr>
@@ -153,7 +153,7 @@
                     <td>{{ $g->course->nama_matkul ?? '-' }}</td>
                     <td class="text-center">{{ $sks }}</td>
                     <td class="text-center">{{ $g->course->semester ?? '-' }}</td>
-                    <td class="text-center font-bold">{{ $g->nilai_huruf ?? '-' }}</td>
+                    <td class="text-center font-bold">{{ $g->grade_huruf ?? '-' }}</td>
                     <td class="text-center">{{ number_format($bobot, 2) }}</td>
                 </tr>
             @empty

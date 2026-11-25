@@ -222,7 +222,7 @@
     // Send Quick Prompt Suggestion
     function sendQuickMessage(text) {
         messageInput.value = text;
-        chatForm.dispatchEvent(new Event('submit'));
+        chatForm.dispatchEvent(new Event('submit', { cancelable: true }));
     }
 
     // Submit Chat Form
@@ -276,6 +276,7 @@
         fetch("{{ route('myuniv.ai.chat') }}", {
             method: 'POST',
             headers: {
+                'Accept': 'application/json',
                 'Content-Type': 'application/json',
                 'X-CSRF-TOKEN': '{{ csrf_token() }}'
             },
@@ -300,8 +301,8 @@
                             <i class="fas fa-robot" style="font-size: 13px;"></i>
                         </div>
                         <div class="bg-white text-dark p-3 rounded-3 border shadow-sm" style="max-width: 75%;">
-                            <div class="mb-0 small markdown-content" style="white-space: pre-wrap;">${data.response}</div>
-                            <span class="d-block mt-1 text-muted" style="font-size: 9px;">${data.time}</span>
+                            <div class="mb-0 small markdown-content" style="white-space: pre-wrap;">${escapeHtml(data.response)}</div>
+                            <span class="d-block mt-1 text-muted" style="font-size: 9px;">${escapeHtml(data.time || '')}</span>
                             <div class="mt-2 pt-1 border-top d-flex gap-2 justify-content-end align-items-center feedback-bar">
                                 <button type="button" class="btn btn-link p-0 text-success small" onclick="submitRlhfFeedback(this, 'terimakasih')" title="Puas / Terima Kasih (+1.5%)"><i class="far fa-thumbs-up"></i></button>
                                 <button type="button" class="btn btn-link p-0 text-warning small" onclick="submitRlhfFeedback(this, 'tidak_cukup_puas')" title="Tidak Cukup Puas (-0.18%)"><i class="far fa-meh"></i></button>
@@ -347,6 +348,7 @@
         fetch("{{ route('myuniv.ai.rlhf') }}", {
             method: 'POST',
             headers: {
+                'Accept': 'application/json',
                 'Content-Type': 'application/json',
                 'X-CSRF-TOKEN': '{{ csrf_token() }}'
             },

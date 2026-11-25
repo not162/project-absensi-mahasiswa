@@ -54,13 +54,13 @@ class MyUnivAIController extends Controller
 
         $userMessage = $request->message;
         
-        // Auto RLHF detection based on text
+        // Auto RLHF detection based on text (word-boundary aware so "masalah" doesn't match "salah")
         $lowerMsg = strtolower($userMessage);
-        if (str_contains($lowerMsg, 'terima kasih') || str_contains($lowerMsg, 'terimakasih') || str_contains($lowerMsg, 'thank you') || str_contains($lowerMsg, 'thanks')) {
-            $user->rlhf_score = min(200.0, $user->rlhf_score + 1.5);
+        if (preg_match('/\b(terima kasih|terimakasih|thank you|thanks)\b/i', $lowerMsg)) {
+            $user->rlhf_score = min(200.0, ($user->rlhf_score ?? 100.0) + 1.5);
             $user->save();
-        } elseif (str_contains($lowerMsg, 'kurang puas') || str_contains($lowerMsg, 'kecewa') || str_contains($lowerMsg, 'salah') || str_contains($lowerMsg, 'tidak puas') || str_contains($lowerMsg, 'tidak akurat') || str_contains($lowerMsg, 'jelek')) {
-            $user->rlhf_score = max(0.0, $user->rlhf_score - 0.18);
+        } elseif (preg_match('/\b(kurang puas|kecewa|salah|tidak puas|tidak akurat|jelek)\b/i', $lowerMsg)) {
+            $user->rlhf_score = max(0.0, ($user->rlhf_score ?? 100.0) - 0.18);
             $user->save();
         }
 
@@ -78,18 +78,20 @@ class MyUnivAIController extends Controller
             'success' => true,
             'response' => $aiResponse,
             'time' => now()->format('H:i'),
-            'rlhf_score' => round($user->rlhf_score, 2),
+            'rlhf_score' => round($user->rlhf_score ?? 100.0, 2),
         ]);
     }
 
     /** Handle explicit thumbs / feedback button clicks */
     public function rlhfFeedback(Request $request)
     {
+        $user = Auth::user();
+        abort_if($user->role !== 'user', 403);
+
         $request->validate([
             'type' => 'required|in:terimakasih,tidak_cukup_puas,kurang_puas'
         ]);
 
-        $user = Auth::user();
         $change = 0.0;
 
         if ($request->type === 'terimakasih') {
@@ -100,7 +102,7 @@ class MyUnivAIController extends Controller
             $change = -2.1;
         }
 
-        $user->rlhf_score = max(0.0, min(200.0, $user->rlhf_score + $change));
+        $user->rlhf_score = max(0.0, min(200.0, ($user->rlhf_score ?? 100.0) + $change));
         $user->save();
 
         return response()->json([

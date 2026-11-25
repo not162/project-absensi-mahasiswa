@@ -226,16 +226,17 @@ document.addEventListener("DOMContentLoaded", function() {
     const toggleSyncModeLabel = document.getElementById('toggleSyncModeLabel');
     const saveButtonContainer = document.getElementById('attendanceForm').querySelector('.border-top');
 
-    // Toggle visual states and save button visibility based on mode
+    // Toggle visual states and save button text based on mode
     function updateModeUI() {
+        const submitBtn = saveButtonContainer ? saveButtonContainer.querySelector('button[type="submit"]') : null;
         if (toggleSyncMode.checked) {
             toggleSyncModeLabel.innerText = "Asynchronous (Auto-Save)";
             toggleSyncModeLabel.className = "form-check-label fw-bold text-success ms-2";
-            if(saveButtonContainer) saveButtonContainer.style.display = 'none';
+            if (submitBtn) submitBtn.innerHTML = '<i class="fas fa-save me-2"></i> Simpan Materi';
         } else {
             toggleSyncModeLabel.innerText = "Synchronous (Manual Save)";
             toggleSyncModeLabel.className = "form-check-label fw-bold text-warning ms-2";
-            if(saveButtonContainer) saveButtonContainer.style.display = 'block';
+            if (submitBtn) submitBtn.innerHTML = '<i class="fas fa-save me-2"></i> Simpan Absensi';
         }
     }
 
@@ -257,6 +258,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 fetch("{{ route('absensi.updateAsync') }}", {
                     method: 'POST',
                     headers: {
+                        'Accept': 'application/json',
                         'Content-Type': 'application/json',
                         'X-CSRF-TOKEN': '{{ csrf_token() }}'
                     },

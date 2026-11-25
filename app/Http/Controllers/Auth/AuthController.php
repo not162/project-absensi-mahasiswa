@@ -114,6 +114,16 @@ class AuthController extends Controller
             }
         }
 
+        // Validate class belongs to selected department for students
+        if ($validated['role'] === 'user' && $request->class_id && $request->department_id) {
+            $kelasValid = \App\Models\Kelas::where('id', $request->class_id)
+                ->where('department_id', $request->department_id)
+                ->exists();
+            if (!$kelasValid) {
+                return redirect()->back()->withErrors(['class_id' => 'Kelas tidak sesuai dengan Program Studi yang dipilih.'])->withInput();
+            }
+        }
+
         // 3. Create user mapping identifier based on role
         $userData = [
             'name' => $validated['name'],
@@ -139,7 +149,11 @@ class AuthController extends Controller
                 ->get();
             foreach ($courses as $course) {
                 \Illuminate\Support\Facades\DB::table('lecturer_courses')->updateOrInsert(
-                    ['user_id' => $user->id, 'course_id' => $course->id],
+                    [
+                        'user_id' => $user->id,
+                        'course_id' => $course->id,
+                        'semester' => $course->semester,
+                    ],
                     ['created_at' => now(), 'updated_at' => now()]
                 );
             }
